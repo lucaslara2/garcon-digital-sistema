@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, ChefHat, Eye, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type OrderStatus = Database['public']['Enums']['order_status'];
 
 interface Order {
   id: string;
@@ -66,7 +69,7 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId }: ActiveOrdersPro
     refetchInterval: 5000 // Atualiza a cada 5 segundos
   });
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       const { error } = await supabase
         .from('orders')
