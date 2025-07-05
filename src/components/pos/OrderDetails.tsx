@@ -81,7 +81,15 @@ export function OrderDetails({
 
   useEffect(() => {
     if (clientData) {
-      setSelectedClient(clientData as Client);
+      // Transform the data to match the Client interface
+      const transformedClient: Client = {
+        id: clientData.id,
+        name: clientData.name,
+        phone: clientData.phone,
+        addresses: clientData.client_addresses || []
+      };
+      
+      setSelectedClient(transformedClient);
       setCustomerName(clientData.name);
       
       // Selecionar endereço padrão se existir
