@@ -17,7 +17,7 @@ import Subscription from "./pages/Subscription";
 import DigitalMenu from "./pages/DigitalMenu";
 import OrdersManagement from "./components/admin/OrdersManagement";
 import WhatsAppCampaigns from "./components/admin/WhatsAppCampaigns";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 

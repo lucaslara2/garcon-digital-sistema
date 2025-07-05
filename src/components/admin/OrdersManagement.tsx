@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,12 +13,15 @@ import {
   Truck, 
   CheckCircle, 
   X, 
-  Print, 
+  Printer, 
   MapPin, 
   Phone,
   User,
   DollarSign
 } from 'lucide-react';
+import { Database } from '@/integrations/supabase/types';
+
+type OrderStatus = Database['public']['Enums']['order_status'];
 
 const OrdersManagement = () => {
   const { userProfile } = useAuth();
@@ -113,7 +115,7 @@ const OrdersManagement = () => {
 
   // Atualizar status do pedido
   const updateOrderStatus = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+    mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
       const { error } = await supabase
         .from('orders')
         .update({ 
@@ -251,7 +253,7 @@ ${order.delivery_instructions || ''}
               size="sm"
               onClick={() => handlePrintOrder(order)}
             >
-              <Print className="h-4 w-4" />
+              <Printer className="h-4 w-4" />
             </Button>
           </div>
         </div>

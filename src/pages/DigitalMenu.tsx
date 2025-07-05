@@ -43,6 +43,7 @@ interface Product {
     id: string;
     name: string;
     price: number;
+    is_active?: boolean;
   }>;
 }
 
@@ -327,7 +328,7 @@ const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: 
                   <div>
                     <h4 className="font-medium mb-2">Adicionais:</h4>
                     <div className="space-y-2">
-                      {product.product_addons.filter(addon => addon.is_active).map(addon => (
+                      {product.product_addons.filter(addon => addon.is_active !== false).map(addon => (
                         <div key={addon.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={addon.id}
