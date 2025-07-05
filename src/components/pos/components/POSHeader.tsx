@@ -11,8 +11,8 @@ import {
 
 interface POSHeaderProps {
   userProfile: any;
-  activeView: string;
-  onViewChange: (view: string) => void;
+  activeView: 'new-order' | 'orders';
+  onViewChange: (view: 'new-order' | 'orders') => void;
   totalItems: number;
   totalValue: number;
   onOpenClientManager?: () => void;
