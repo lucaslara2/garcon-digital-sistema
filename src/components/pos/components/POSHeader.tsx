@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Store, ShoppingCart, Plus, Clock, ChefHat, FileText, TrendingUp, Sparkles } from 'lucide-react';
+import { Store, ShoppingCart, Plus, Clock, ChefHat, FileText, TrendingUp } from 'lucide-react';
 
 interface POSHeaderProps {
   userProfile: any;
@@ -18,51 +18,47 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
       id: 'new-order',
       label: 'Novo Pedido',
       icon: Plus,
-      color: 'from-emerald-500 to-emerald-600',
       count: totalItems > 0 ? totalItems : undefined,
     },
     {
       id: 'pending',
       label: 'Pendentes',
       icon: Clock,
-      color: 'from-amber-500 to-amber-600',
     },
     {
       id: 'preparing',
       label: 'Em Preparo',
       icon: ChefHat,
-      color: 'from-blue-500 to-blue-600',
     },
     {
       id: 'tickets',
       label: 'Comandas',
       icon: FileText,
-      color: 'from-purple-500 to-purple-600',
     }
   ];
 
   return (
-    <div className="glass-effect border-b sticky top-0 z-50 modern-shadow">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Brand Section */}
-          <div className="flex items-center space-x-4">
-            <div className="primary-gradient p-3 rounded-xl modern-shadow">
-              <Store className="h-6 w-6 text-white" />
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <Store className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">
+              <h1 className="text-lg font-bold text-gray-900">
                 Sistema PDV
               </h1>
-              <p className="text-sm text-muted-foreground flex items-center">
+              <p className="text-xs text-gray-500 flex items-center">
                 <span>{userProfile.name}</span>
-                <div className="w-2 h-2 bg-emerald-500 rounded-full ml-2 animate-pulse"></div>
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full ml-2"></div>
               </p>
             </div>
           </div>
           
           {/* Navigation Menu */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             {menuItems.map((item) => {
               const isActive = activeView === item.id;
               const Icon = item.icon;
@@ -73,20 +69,13 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   onClick={() => onViewChange(item.id as any)}
-                  className={`
-                    relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200
-                    ${isActive 
-                      ? 'bg-primary text-primary-foreground shadow-md' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                    }
-                  `}
+                  className="relative px-3 py-2 text-sm rounded-md transition-colors"
                 >
-                  <Icon className="h-4 w-4 mr-2" />
+                  <Icon className="h-4 w-4 mr-1.5" />
                   {item.label}
                   
-                  {/* Badge for counts */}
                   {item.count && (
-                    <Badge className="ml-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    <Badge className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                       {item.count}
                     </Badge>
                   )}
@@ -96,29 +85,27 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
           </div>
 
           {/* Cart Summary */}
-          <div className="flex items-center space-x-4">
-            <div className="card-gradient px-6 py-3 rounded-xl border modern-shadow">
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="text-center">
-                    <div className="text-foreground font-bold">{totalItems}</div>
-                    <div className="text-xs text-muted-foreground">itens</div>
-                  </div>
+          <div className="bg-gray-50 px-4 py-2 rounded-lg border">
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="bg-blue-100 p-1.5 rounded">
+                  <ShoppingCart className="h-3 w-3 text-blue-600" />
                 </div>
-                
-                <div className="w-px h-8 bg-border"></div>
-                
-                <div className="flex items-center space-x-2">
-                  <div className="bg-emerald-500/10 p-2 rounded-lg">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div className="text-center">
-                    <div className="text-foreground font-bold">R$ {totalValue.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">total</div>
-                  </div>
+                <div className="text-center">
+                  <div className="text-gray-900 font-semibold text-sm">{totalItems}</div>
+                  <div className="text-xs text-gray-500">itens</div>
+                </div>
+              </div>
+              
+              <div className="w-px h-6 bg-gray-300"></div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="bg-green-100 p-1.5 rounded">
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                </div>
+                <div className="text-center">
+                  <div className="text-gray-900 font-semibold text-sm">R$ {totalValue.toFixed(2)}</div>
+                  <div className="text-xs text-gray-500">total</div>
                 </div>
               </div>
             </div>

@@ -32,33 +32,34 @@ export function PaymentSection({
   isProcessing
 }: PaymentSectionProps) {
   return (
-    <div className="card-gradient rounded-xl border modern-shadow">
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold text-foreground flex items-center">
-          <Receipt className="h-5 w-5 mr-2 text-primary" />
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Receipt className="h-4 w-4 mr-2 text-blue-600" />
           Finalizar Pagamento
         </h2>
       </div>
 
       <div className="p-4 space-y-4">
         {/* Total */}
-        <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
           <div className="flex justify-between items-center">
-            <span className="text-foreground font-medium">Total a Pagar:</span>
-            <span className="text-xl font-bold text-primary">R$ {total.toFixed(2)}</span>
+            <span className="text-gray-700 font-medium">Total a Pagar:</span>
+            <span className="text-xl font-bold text-blue-600">R$ {total.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Payment Methods */}
         <div>
-          <Label className="text-foreground text-sm font-medium mb-3 block">
+          <Label className="text-gray-700 text-sm font-medium mb-2 block">
             Método de Pagamento
           </Label>
           <div className="space-y-2">
             <Button
               variant={paymentMethod === 'cash' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('cash')}
-              className={`w-full justify-start ${paymentMethod === 'cash' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
+              className="w-full justify-start h-9 text-sm"
+              size="sm"
             >
               <Banknote className="h-4 w-4 mr-2" />
               Dinheiro
@@ -68,7 +69,8 @@ export function PaymentSection({
             <Button
               variant={paymentMethod === 'credit_card' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('credit_card')}
-              className={`w-full justify-start ${paymentMethod === 'credit_card' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
+              className="w-full justify-start h-9 text-sm"
+              size="sm"
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Cartão de Crédito
@@ -78,7 +80,8 @@ export function PaymentSection({
             <Button
               variant={paymentMethod === 'pix' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('pix')}
-              className={`w-full justify-start ${paymentMethod === 'pix' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
+              className="w-full justify-start h-9 text-sm"
+              size="sm"
             >
               <Smartphone className="h-4 w-4 mr-2" />
               PIX
@@ -91,27 +94,27 @@ export function PaymentSection({
         {paymentMethod === 'cash' && (
           <div className="space-y-3">
             <div>
-              <Label className="text-foreground text-sm font-medium mb-2 block">
+              <Label className="text-gray-700 text-sm font-medium mb-1 block">
                 Valor Recebido
               </Label>
               <div className="relative">
-                <DollarSign className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <DollarSign className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input
                   type="number"
                   step="0.01"
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
                   placeholder="0,00"
-                  className="pl-10 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                  className="pl-10 h-9 text-sm"
                 />
               </div>
             </div>
             
             {amountPaid && parseFloat(amountPaid) >= total && (
-              <div className="success-gradient rounded-lg p-3 border border-emerald-200">
+              <div className="bg-green-100 rounded-lg p-3 border border-green-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Troco:</span>
-                  <span className="text-lg font-bold text-white">R$ {change.toFixed(2)}</span>
+                  <span className="text-green-800 font-medium">Troco:</span>
+                  <span className="text-lg font-bold text-green-800">R$ {change.toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -120,7 +123,7 @@ export function PaymentSection({
 
         {/* Process Order Button */}
         <Button
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-11 modern-shadow"
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-10 text-sm"
           onClick={onProcessOrder}
           disabled={isProcessing}
         >
