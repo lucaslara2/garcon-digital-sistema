@@ -30,7 +30,7 @@ const AdminPanel = () => {
         .select(`
           *,
           restaurant:restaurants(name),
-          user:user_profiles(name)
+          user:user_profiles!tickets_user_id_fkey(name)
         `)
         .order('created_at', { ascending: false });
       
