@@ -19,7 +19,7 @@ const StaffManagement = () => {
   const [newStaffData, setNewStaffData] = useState({
     name: '',
     email: '',
-    role: 'staff'
+    role: 'staff' as const
   });
 
   // Buscar todos os usuários staff e admin
@@ -189,7 +189,7 @@ const StaffManagement = () => {
                 <label className="text-sm font-medium text-white">Role</label>
                 <Select 
                   value={newStaffData.role} 
-                  onValueChange={(value) => setNewStaffData({...newStaffData, role: value})}
+                  onValueChange={(value: 'staff' | 'admin') => setNewStaffData({...newStaffData, role: value})}
                 >
                   <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                     <SelectValue />

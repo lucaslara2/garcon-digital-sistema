@@ -2,9 +2,8 @@
 import React from 'react';
 import { useAuth } from './AuthProvider';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Database } from '@/integrations/supabase/types';
 
-type UserRole = Database['public']['Enums']['user_role'];
+type UserRole = 'admin' | 'restaurant_owner' | 'waiter' | 'cashier' | 'kitchen' | 'staff';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,7 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role)) {
+  if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role as UserRole)) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
