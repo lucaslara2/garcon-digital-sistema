@@ -10,7 +10,8 @@ import { Cart } from './Cart';
 import { PaymentSection } from './PaymentSection';
 import { ActiveOrders } from './ActiveOrders';
 import { OrderTicket } from './OrderTicket';
-import { Store, ShoppingCart, Receipt } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Store, ShoppingCart, Receipt, Clock, ChefHat, FileText, Plus } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PaymentMethod = Database['public']['Enums']['payment_method'];
@@ -32,6 +33,7 @@ const POSSystem = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [activeView, setActiveView] = useState<'new-order' | 'pending' | 'preparing' | 'tickets'>('new-order');
 
   // Fetch products for POS
   const { data: products } = useQuery({
@@ -231,7 +233,7 @@ const POSSystem = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header Simples */}
+      {/* Header */}
       <div className="bg-slate-900 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -245,6 +247,49 @@ const POSSystem = () => {
               </div>
             </div>
             
+            {/* Menu de Navegação */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={activeView === 'new-order' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('new-order')}
+                className={`${activeView === 'new-order' ? 'bg-amber-600 hover:bg-amber-700' : 'border-slate-600 hover:bg-slate-800'}`}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Novo Pedido
+              </Button>
+              
+              <Button
+                variant={activeView === 'pending' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('pending')}
+                className={`${activeView === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-slate-600 hover:bg-slate-800'}`}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Pendentes
+              </Button>
+              
+              <Button
+                variant={activeView === 'preparing' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('preparing')}
+                className={`${activeView === 'preparing' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:bg-slate-800'}`}
+              >
+                <ChefHat className="h-4 w-4 mr-1" />
+                Em Preparo
+              </Button>
+              
+              <Button
+                variant={activeView === 'tickets' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveView('tickets')}
+                className={`${activeView === 'tickets' ? 'bg-green-600 hover:bg-green-700' : 'border-slate-600 hover:bg-slate-800'}`}
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Comandas
+              </Button>
+            </div>
+
             <div className="flex items-center space-x-4">
               <div className="bg-slate-800 px-3 py-1.5 rounded-lg">
                 <div className="flex items-center space-x-2">
@@ -265,60 +310,92 @@ const POSSystem = () => {
 
       {/* Layout Principal */}
       <div className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-12 gap-4 min-h-[calc(100vh-100px)]">
-          
-          {/* Produtos */}
-          <div className="col-span-3">
-            <ProductGrid products={products} onAddToCart={addToCart} />
+        {activeView === 'new-order' && (
+          <div className="grid grid-cols-12 gap-4 min-h-[calc(100vh-100px)]">
+            {/* Produtos */}
+            <div className="col-span-4">
+              <ProductGrid products={products} onAddToCart={addToCart} />
+            </div>
+
+            {/* Detalhes do Pedido e Carrinho */}
+            <div className="col-span-4 space-y-4">
+              <OrderDetails
+                selectedTable={selectedTable}
+                setSelectedTable={setSelectedTable}
+                customerName={customerName}
+                setCustomerName={setCustomerName}
+                tables={tables}
+              />
+
+              <div className="flex-1">
+                <Cart
+                  cart={cart}
+                  onAddToCart={addToCart}
+                  onRemoveFromCart={removeFromCart}
+                  onClearCart={clearCart}
+                />
+              </div>
+
+              {cart.length > 0 && (
+                <PaymentSection
+                  subtotal={getSubtotal()}
+                  total={getTotal()}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  amountPaid={amountPaid}
+                  setAmountPaid={setAmountPaid}
+                  change={getChange()}
+                  onProcessOrder={handleProcessOrder}
+                  isProcessing={processOrderMutation.isPending}
+                />
+              )}
+            </div>
+
+            {/* Pedidos Ativos */}
+            <div className="col-span-4">
+              <ActiveOrders 
+                onOrderSelect={setSelectedOrder}
+                selectedOrderId={selectedOrder?.id || null}
+              />
+            </div>
           </div>
+        )}
 
-          {/* Detalhes do Pedido */}
-          <div className="col-span-3 space-y-4">
-            <OrderDetails
-              selectedTable={selectedTable}
-              setSelectedTable={setSelectedTable}
-              customerName={customerName}
-              setCustomerName={setCustomerName}
-              tables={tables}
-            />
-
-            <div className="flex-1">
-              <Cart
-                cart={cart}
-                onAddToCart={addToCart}
-                onRemoveFromCart={removeFromCart}
-                onClearCart={clearCart}
+        {(activeView === 'pending' || activeView === 'preparing') && (
+          <div className="grid grid-cols-2 gap-4 min-h-[calc(100vh-100px)]">
+            {/* Lista de Pedidos */}
+            <div>
+              <ActiveOrders 
+                onOrderSelect={setSelectedOrder}
+                selectedOrderId={selectedOrder?.id || null}
+                filterStatus={activeView === 'pending' ? 'pending' : 'preparing'}
               />
             </div>
 
-            {cart.length > 0 && (
-              <PaymentSection
-                subtotal={getSubtotal()}
-                total={getTotal()}
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
-                amountPaid={amountPaid}
-                setAmountPaid={setAmountPaid}
-                change={getChange()}
-                onProcessOrder={handleProcessOrder}
-                isProcessing={processOrderMutation.isPending}
+            {/* Comanda do Pedido Selecionado */}
+            <div>
+              <OrderTicket order={selectedOrder} />
+            </div>
+          </div>
+        )}
+
+        {activeView === 'tickets' && (
+          <div className="grid grid-cols-2 gap-4 min-h-[calc(100vh-100px)]">
+            {/* Lista de Pedidos Finalizados */}
+            <div>
+              <ActiveOrders 
+                onOrderSelect={setSelectedOrder}
+                selectedOrderId={selectedOrder?.id || null}
+                filterStatus="ready"
               />
-            )}
-          </div>
+            </div>
 
-          {/* Pedidos Ativos */}
-          <div className="col-span-3">
-            <ActiveOrders 
-              onOrderSelect={setSelectedOrder}
-              selectedOrderId={selectedOrder?.id || null}
-            />
+            {/* Comanda do Pedido Selecionado */}
+            <div>
+              <OrderTicket order={selectedOrder} />
+            </div>
           </div>
-
-          {/* Comanda */}
-          <div className="col-span-3">
-            <OrderTicket order={selectedOrder} />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
