@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { Search, Clock, CheckCircle, AlertCircle, User, Building2, Calendar } from 'lucide-react';
+import { Search, Clock, CheckCircle, AlertCircle, User, Building2, Calendar, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MasterTicketsView = () => {
@@ -180,7 +180,7 @@ const MasterTicketsView = () => {
               ))}
               {(!filteredTickets || filteredTickets.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
-                  <Ticket className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p>Nenhum ticket encontrado</p>
                 </div>
               )}
