@@ -1,14 +1,13 @@
 
 import React from 'react';
-import { Navbar } from '@/components/layout/Navbar';
+import AppLayout from '@/components/layout/AppLayout';
 import ProductsManager from '@/components/products/ProductsManager';
 
 const ProductsPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <AppLayout>
       <ProductsManager />
-    </div>
+    </AppLayout>
   );
 };
 

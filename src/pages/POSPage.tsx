@@ -1,14 +1,13 @@
 
 import React from 'react';
-import { Navbar } from '@/components/layout/Navbar';
+import AppLayout from '@/components/layout/AppLayout';
 import POSSystem from '@/components/pos/POSSystem';
 
 const POSPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <AppLayout>
       <POSSystem />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -2,30 +2,26 @@
 import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Navigate } from 'react-router-dom';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import LoadingState from '@/components/common/LoadingState';
 import { MainDashboard } from '@/components/dashboard/MainDashboard';
-import AdminDashboard from '@/components/dashboards/AdminDashboard';
-import RestaurantOwnerDashboard from '@/components/dashboards/RestaurantOwnerDashboard';
-import WaiterDashboard from '@/components/dashboards/WaiterDashboard';
-import CashierDashboard from '@/components/dashboards/CashierDashboard';
+import AppLayout from '@/components/layout/AppLayout';
 
 const Dashboard = () => {
   const { userProfile, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Carregando dashboard..." />
-      </div>
-    );
+    return <LoadingState text="Carregando dashboard..." />;
   }
 
   if (!userProfile) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Todos os usuários agora veem o dashboard principal de controle do restaurante
-  return <MainDashboard />;
+  return (
+    <AppLayout>
+      <MainDashboard />
+    </AppLayout>
+  );
 };
 
 export default Dashboard;
