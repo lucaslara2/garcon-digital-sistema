@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +18,12 @@ import {
   Filter,
   MessageSquare,
   TrendingUp,
-  Activity
+  Activity,
+  Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
+import StaffManagement from './StaffManagement';
 
 type RestaurantStatus = Database['public']['Enums']['restaurant_status'];
 
@@ -272,12 +273,16 @@ const MasterDashboard = () => {
         </div>
 
         <Tabs defaultValue="tickets" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-800">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-800">
             <TabsTrigger value="tickets" className="text-slate-300">
               Tickets de Suporte
             </TabsTrigger>
             <TabsTrigger value="restaurants" className="text-slate-300">
               Restaurantes
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="text-slate-300">
+              <Shield className="h-4 w-4 mr-2" />
+              Staff
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-slate-300">
               Relatórios
@@ -478,6 +483,10 @@ const MasterDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="staff" className="space-y-4">
+            <StaffManagement />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
