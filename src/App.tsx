@@ -10,6 +10,9 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Subscription from "./pages/Subscription";
+import KitchenPage from "./pages/KitchenPage";
+import POSPage from "./pages/POSPage";
+import RestaurantManagement from "./pages/RestaurantManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +32,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/kitchen" 
+              element={
+                <ProtectedRoute>
+                  <KitchenPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/pos" 
+              element={
+                <ProtectedRoute>
+                  <POSPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/restaurant-management" 
+              element={
+                <ProtectedRoute>
+                  <RestaurantManagement />
                 </ProtectedRoute>
               } 
             />
