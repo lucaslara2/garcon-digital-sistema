@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Store, Truck, Package, Users } from 'lucide-react';
 import { OrderType } from '../types/orderTypes';
 
@@ -37,40 +38,46 @@ export function OrderTypeSelector({ orderType, onOrderTypeChange }: OrderTypeSel
     }
   ];
 
+  const selectedOption = orderTypeOptions.find(option => option.value === orderType);
+
   return (
-    <div>
-      <Label className="text-slate-300 text-sm font-medium mb-3 block">Tipo de Pedido</Label>
-      <div className="space-y-2">
-        {orderTypeOptions.map((option) => {
-          const Icon = option.icon;
-          const isSelected = orderType === option.value;
-          
-          return (
-            <button
-              key={option.value}
-              onClick={() => onOrderTypeChange(option.value)}
-              className={`
-                w-full p-3 rounded-lg border text-left transition-all duration-200
-                ${isSelected 
-                  ? 'border-amber-500 bg-amber-500/10 text-white' 
-                  : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
-                }
-              `}
-            >
-              <div className="flex items-center space-x-3">
-                <Icon className={`h-4 w-4 ${isSelected ? 'text-amber-400' : 'text-slate-400'}`} />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{option.label}</div>
-                  <div className="text-xs text-slate-400">{option.description}</div>
+    <div className="space-y-2">
+      <Label className="text-slate-300 text-sm font-medium">Tipo de Pedido</Label>
+      <Select value={orderType} onValueChange={onOrderTypeChange}>
+        <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-12">
+          <div className="flex items-center space-x-3">
+            {selectedOption && (
+              <>
+                <selectedOption.icon className="h-4 w-4 text-amber-400" />
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">{selectedOption.label}</span>
+                  <span className="text-xs text-slate-400">{selectedOption.description}</span>
                 </div>
-                {isSelected && (
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </>
+            )}
+          </div>
+        </SelectTrigger>
+        <SelectContent className="bg-slate-800 border-slate-700">
+          {orderTypeOptions.map((option) => {
+            const Icon = option.icon;
+            return (
+              <SelectItem 
+                key={option.value} 
+                value={option.value}
+                className="text-white hover:bg-slate-700 focus:bg-slate-700 py-3"
+              >
+                <div className="flex items-center space-x-3">
+                  <Icon className="h-4 w-4 text-amber-400" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{option.label}</span>
+                    <span className="text-xs text-slate-400">{option.description}</span>
+                  </div>
+                </div>
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

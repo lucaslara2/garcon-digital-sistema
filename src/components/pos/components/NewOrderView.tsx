@@ -65,14 +65,14 @@ export function NewOrderView({
   getChange
 }: NewOrderViewProps) {
   return (
-    <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-140px)]">
+    <div className="grid grid-cols-12 gap-8 min-h-[calc(100vh-140px)]">
       {/* Products Column */}
       <div className="col-span-4 animate-fade-in">
         <ProductGrid products={products} onAddToCart={onAddToCart} />
       </div>
 
       {/* Order Details and Cart Column */}
-      <div className="col-span-4 space-y-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="col-span-4 space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <OrderDetails
           selectedTable={selectedTable}
           setSelectedTable={onTableChange}
