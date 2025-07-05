@@ -42,35 +42,35 @@ export function OrderTypeSelector({ orderType, onOrderTypeChange }: OrderTypeSel
 
   return (
     <div className="space-y-2">
-      <Label className="text-slate-300 text-sm font-medium">Tipo de Pedido</Label>
+      <Label className="text-gray-700 text-sm font-medium">Tipo de Pedido</Label>
       <Select value={orderType} onValueChange={onOrderTypeChange}>
-        <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-12">
+        <SelectTrigger className="bg-white border-gray-300 text-gray-900 h-10">
           <div className="flex items-center space-x-3">
             {selectedOption && (
               <>
-                <selectedOption.icon className="h-4 w-4 text-amber-400" />
+                <selectedOption.icon className="h-4 w-4 text-blue-600" />
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{selectedOption.label}</span>
-                  <span className="text-xs text-slate-400">{selectedOption.description}</span>
+                  <span className="text-xs text-gray-500">{selectedOption.description}</span>
                 </div>
               </>
             )}
           </div>
         </SelectTrigger>
-        <SelectContent className="bg-slate-800 border-slate-700">
+        <SelectContent className="bg-white border-gray-200">
           {orderTypeOptions.map((option) => {
             const Icon = option.icon;
             return (
               <SelectItem 
                 key={option.value} 
                 value={option.value}
-                className="text-white hover:bg-slate-700 focus:bg-slate-700 py-3"
+                className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100 py-3"
               >
                 <div className="flex items-center space-x-3">
-                  <Icon className="h-4 w-4 text-amber-400" />
+                  <Icon className="h-4 w-4 text-blue-600" />
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{option.label}</span>
-                    <span className="text-xs text-slate-400">{option.description}</span>
+                    <span className="text-xs text-gray-500">{option.description}</span>
                   </div>
                 </div>
               </SelectItem>

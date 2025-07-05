@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -114,20 +113,20 @@ export function OrderDetails({
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-xl border border-slate-700/50 shadow-2xl backdrop-blur-sm">
-      <div className="p-5 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-t-xl">
-        <h2 className="text-lg font-semibold text-white flex items-center">
-          <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-2 rounded-lg mr-3 shadow-lg">
-            <Users className="h-5 w-5 text-white" />
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+          <div className="bg-blue-600 p-2 rounded-lg mr-3">
+            <Users className="h-4 w-4 text-white" />
           </div>
           <div>
             <span>Detalhes do Pedido</span>
-            <p className="text-xs text-slate-400 font-normal">Configure os dados do pedido</p>
+            <p className="text-xs text-gray-500 font-normal">Configure os dados do pedido</p>
           </div>
         </h2>
       </div>
       
-      <div className="p-5 space-y-6">
+      <div className="p-4 space-y-4">
         {/* Tipo de Pedido com Dropdown */}
         <OrderTypeSelector 
           orderType={orderType}
@@ -137,17 +136,17 @@ export function OrderDetails({
         {/* Seleção de Mesa */}
         {orderType === 'mesa' && (
           <div className="animate-fade-in">
-            <Label className="text-slate-300 text-sm font-medium">Mesa</Label>
+            <Label className="text-gray-700 text-sm font-medium">Mesa</Label>
             <Select value={selectedTable} onValueChange={setSelectedTable}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-white mt-1 h-12">
+              <SelectTrigger className="bg-white border-gray-300 text-gray-900 mt-1 h-10">
                 <SelectValue placeholder="Selecione a mesa" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-white border-gray-200">
                 {tables?.map((table) => (
-                  <SelectItem key={table.id} value={table.id} className="text-white hover:bg-slate-700">
+                  <SelectItem key={table.id} value={table.id} className="text-gray-900 hover:bg-gray-100">
                     <div className="flex items-center justify-between w-full">
                       <span>Mesa {table.table_number}</span>
-                      <span className="text-xs text-slate-400 ml-2">({table.seats} lugares)</span>
+                      <span className="text-xs text-gray-500 ml-2">({table.seats} lugares)</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -167,9 +166,9 @@ export function OrderDetails({
         {/* Nome do Cliente */}
         {(orderType !== 'balcao') && (
           <div className="animate-fade-in">
-            <Label className="text-slate-300 text-sm font-medium">
+            <Label className="text-gray-700 text-sm font-medium">
               Nome do Cliente
-              {orderType === 'entrega' && <span className="text-red-400 ml-1">*</span>}
+              {orderType === 'entrega' && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Input
               value={customerName}
@@ -179,7 +178,7 @@ export function OrderDetails({
                 orderType === 'retirada' ? "Nome para retirada" :
                 "Nome do cliente"
               }
-              className="bg-slate-800 border-slate-700 text-white mt-1 h-12 focus:border-amber-500 focus:ring-amber-500/20"
+              className="bg-white border-gray-300 text-gray-900 mt-1 h-10 focus:border-blue-500 focus:ring-blue-500/20"
               required={orderType === 'entrega'}
             />
           </div>

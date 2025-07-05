@@ -107,16 +107,16 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
   };
 
   const getIcon = () => {
-    if (filterStatus === 'pending') return <Clock className="h-5 w-5 mr-2 text-yellow-400" />;
-    if (filterStatus === 'preparing') return <ChefHat className="h-5 w-5 mr-2 text-blue-400" />;
-    if (filterStatus === 'ready') return <CheckCircle className="h-5 w-5 mr-2 text-green-400" />;
-    return <AlertCircle className="h-5 w-5 mr-2 text-amber-400" />;
+    if (filterStatus === 'pending') return <Clock className="h-4 w-4 mr-2 text-yellow-600" />;
+    if (filterStatus === 'preparing') return <ChefHat className="h-4 w-4 mr-2 text-blue-600" />;
+    if (filterStatus === 'ready') return <CheckCircle className="h-4 w-4 mr-2 text-green-600" />;
+    return <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />;
   };
 
   return (
-    <div className="bg-slate-900 rounded-lg border border-slate-800 h-full flex flex-col">
-      <div className="p-4 border-b border-slate-800">
-        <h2 className="text-lg font-semibold text-white flex items-center">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
           {getIcon()}
           {getTitle()}
         </h2>
@@ -128,8 +128,8 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
             key={order.id}
             className={`p-4 rounded-lg border cursor-pointer transition-colors ${
               selectedOrderId === order.id 
-                ? 'border-amber-500 bg-amber-900/20' 
-                : 'border-slate-700 bg-slate-800 hover:border-amber-500/50'
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
             }`}
             onClick={() => onOrderSelect(order)}
           >
@@ -139,16 +139,16 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
                   variant="secondary" 
                   className={`text-xs ${
                     order.status === 'pending' 
-                      ? 'bg-yellow-900/30 text-yellow-400 border-yellow-500/40'
+                      ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
                       : order.status === 'preparing'
-                      ? 'bg-blue-900/30 text-blue-400 border-blue-500/40'
-                      : 'bg-green-900/30 text-green-400 border-green-500/40'
+                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                      : 'bg-green-100 text-green-800 border-green-200'
                   }`}
                 >
                   <Timer className="h-3 w-3 mr-1" />
                   {formatTimeAgo(order.created_at)}
                 </Badge>
-                <span className="text-white font-medium text-sm">#{order.id.slice(-6)}</span>
+                <span className="text-gray-900 font-medium text-sm">#{order.id.slice(-6)}</span>
               </div>
               
               {order.status === 'pending' && (
@@ -189,10 +189,10 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-slate-300 font-medium">{order.customer_name}</span>
-                <span className="font-bold text-amber-400">R$ {order.total.toFixed(2)}</span>
+                <span className="text-gray-700 font-medium">{order.customer_name}</span>
+                <span className="font-bold text-green-600">R$ {order.total.toFixed(2)}</span>
               </div>
-              <div className="flex items-center text-slate-400 text-sm">
+              <div className="flex items-center text-gray-500 text-sm">
                 <MapPin className="h-3 w-3 mr-1" />
                 <span>
                   {order.restaurant_tables?.table_number 
@@ -205,7 +205,7 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
               </div>
               
               {/* Preview dos itens */}
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-gray-400">
                 {order.order_items.slice(0, 2).map((item, index) => (
                   <span key={item.id}>
                     {item.quantity}x {item.products.name}
@@ -219,19 +219,19 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
         ))}
 
         {activeOrders?.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             {filterStatus === 'ready' ? (
-              <FileText className="h-12 w-12 mb-4 text-slate-600" />
+              <FileText className="h-12 w-12 mb-4 text-gray-300" />
             ) : (
-              <Clock className="h-12 w-12 mb-4 text-slate-600" />
+              <Clock className="h-12 w-12 mb-4 text-gray-300" />
             )}
-            <p className="text-lg font-medium mb-2">
+            <p className="text-lg font-medium mb-2 text-gray-600">
               {filterStatus === 'pending' && 'Nenhum pedido pendente'}
               {filterStatus === 'preparing' && 'Nenhum pedido em preparo'}
               {filterStatus === 'ready' && 'Nenhum pedido pronto'}
               {!filterStatus && 'Nenhum pedido ativo'}
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gray-400">
               {filterStatus === 'ready' 
                 ? 'Pedidos prontos aparecerão aqui'
                 : 'Novos pedidos aparecerão aqui'

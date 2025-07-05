@@ -29,8 +29,8 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
 
   if (!products?.length) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 h-full shadow-sm">
-        <div className="p-4 border-b border-gray-200">
+      <div className="bg-white rounded-xl border border-gray-200 h-full shadow-sm">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <div className="bg-blue-600 p-2 rounded-lg mr-3">
               <Package className="h-4 w-4 text-white" />
@@ -50,8 +50,8 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 h-full flex flex-col shadow-sm">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white rounded-xl border border-gray-200 h-full flex flex-col shadow-sm">
+      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <div className="bg-blue-600 p-2 rounded-lg mr-3">
@@ -59,7 +59,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
             </div>
             Produtos
           </h2>
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 border-gray-200">
             {filteredProducts?.length || 0} itens
           </Badge>
         </div>
@@ -71,7 +71,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
             placeholder="Buscar produtos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-9 text-sm"
+            className="pl-10 h-9 text-sm bg-white border-gray-300"
           />
         </div>
       </div>
@@ -82,7 +82,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
             <Button
               key={product.id}
               variant="outline"
-              className="h-auto p-3 flex flex-col border bg-white hover:bg-gray-50 text-left group transition-all duration-200 rounded-lg"
+              className="h-auto p-3 flex flex-col border border-gray-200 bg-white hover:bg-gray-50 text-left group transition-all duration-200 rounded-lg hover:border-blue-300"
               onClick={() => onAddToCart(product)}
             >
               <div className="w-full space-y-2">
@@ -92,7 +92,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                       {product.name}
                     </div>
                     {product.category && (
-                      <Badge variant="secondary" className="text-xs mt-1">
+                      <Badge variant="secondary" className="text-xs mt-1 bg-gray-100 text-gray-600 border-gray-200">
                         {product.category.name}
                       </Badge>
                     )}
