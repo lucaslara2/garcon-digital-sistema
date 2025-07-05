@@ -190,6 +190,7 @@ const ProductsManager = () => {
       <CreateProductModal 
         open={createProductOpen} 
         onOpenChange={setCreateProductOpen}
+        categories={categories}
       />
       <CreateCategoryModal 
         open={createCategoryOpen} 
