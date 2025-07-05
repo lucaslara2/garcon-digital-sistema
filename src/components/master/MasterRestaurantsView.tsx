@@ -31,19 +31,43 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
 
-  const { data: restaurants, isLoading } = useQuery({
+  const { data: restaurants, isLoading, error } = useQuery({
     queryKey: ['restaurants-list'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log('Fetching restaurants...');
+      
+      // Buscar todos os restaurantes sem joins complexos
+      const { data: restaurantsData, error: restaurantsError } = await supabase
         .from('restaurants')
-        .select(`
-          *,
-          user_profiles!inner(id, name, role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (restaurantsError) {
+        console.error('Error fetching restaurants:', restaurantsError);
+        throw restaurantsError;
+      }
+
+      console.log('Restaurants fetched:', restaurantsData?.length || 0);
+
+      // Para cada restaurante, buscar o proprietário
+      const restaurantsWithOwners = await Promise.all(
+        (restaurantsData || []).map(async (restaurant) => {
+          const { data: owners } = await supabase
+            .from('user_profiles')
+            .select('id, name, role')
+            .eq('restaurant_id', restaurant.id)
+            .eq('role', 'restaurant_owner')
+            .limit(1);
+          
+          return {
+            ...restaurant,
+            user_profiles: owners || []
+          };
+        })
+      );
+
+      console.log('Restaurants with owners:', restaurantsWithOwners);
+      return restaurantsWithOwners;
     }
   });
 
@@ -101,6 +125,25 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
     );
   }
 
+  // Mostrar erro se houver
+  if (error) {
+    console.error('Query error:', error);
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Erro ao carregar restaurantes</h3>
+          <p className="text-gray-600 mb-4">
+            {error.message || 'Erro desconhecido ao buscar restaurantes'}
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,6 +164,16 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
           className="pl-10"
         />
       </div>
+
+      {/* Debug info */}
+      {!isLoading && (
+        <div className="text-sm text-gray-500">
+          {restaurants?.length ? `${restaurants.length} restaurantes encontrados` : 'Nenhum restaurante encontrado'}
+          {filteredRestaurants && filteredRestaurants.length !== restaurants?.length && 
+            ` (${filteredRestaurants.length} após filtro)`
+          }
+        </div>
+      )}
 
       {/* Restaurants Grid */}
       {isLoading ? (

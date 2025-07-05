@@ -43,6 +43,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .single();
             
             console.log('Profile data:', profile, 'Error:', error);
+            console.log('User role detected:', profile?.role);
+            
+            // Verificar se é admin e testar acesso a restaurantes
+            if (profile?.role === 'admin') {
+              console.log('Admin user detected, testing restaurant access...');
+              const { data: testRestaurants, error: testError } = await supabase
+                .from('restaurants')
+                .select('id, name')
+                .limit(5);
+              
+              console.log('Test restaurant query result:', testRestaurants?.length || 0, 'restaurants found');
+              if (testError) {
+                console.error('Test restaurant query error:', testError);
+              }
+            }
+            
             setUserProfile(profile);
           }, 0);
         } else {
