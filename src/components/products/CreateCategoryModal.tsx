@@ -56,41 +56,41 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+      <DialogContent className="max-w-md bg-white border-gray-200">
         <DialogHeader>
-          <DialogTitle className="text-white">Criar Nova Categoria</DialogTitle>
+          <DialogTitle className="text-gray-900">Criar Nova Categoria</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-slate-300">Nome da Categoria</Label>
+            <Label htmlFor="name" className="text-gray-700">Nome da Categoria</Label>
             <Input
               id="name"
               name="name"
               required
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
               placeholder="Ex: Pizzas, Bebidas, Sobremesas"
             />
           </div>
           
           <div>
-            <Label htmlFor="description" className="text-slate-300">Descrição</Label>
+            <Label htmlFor="description" className="text-gray-700">Descrição</Label>
             <Textarea
               id="description"
               name="description"
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
               placeholder="Descreva a categoria..."
             />
           </div>
 
           <div>
-            <Label htmlFor="display_order" className="text-slate-300">Ordem de Exibição</Label>
+            <Label htmlFor="display_order" className="text-gray-700">Ordem de Exibição</Label>
             <Input
               id="display_order"
               name="display_order"
               type="number"
               min="0"
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
               placeholder="0"
             />
           </div>
@@ -100,13 +100,13 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={createCategoryMutation.isPending}
             >
               {createCategoryMutation.isPending ? 'Criando...' : 'Criar Categoria'}

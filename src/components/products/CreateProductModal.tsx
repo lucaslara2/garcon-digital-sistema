@@ -80,25 +80,25 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-slate-800 border-slate-700">
+      <DialogContent className="max-w-2xl bg-white border-gray-200">
         <DialogHeader>
-          <DialogTitle className="text-white">Criar Novo Produto</DialogTitle>
+          <DialogTitle className="text-gray-900">Criar Novo Produto</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name" className="text-slate-300">Nome do Produto</Label>
+              <Label htmlFor="name" className="text-gray-700">Nome do Produto</Label>
               <Input
                 id="name"
                 name="name"
                 required
-                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                 placeholder="Ex: Pizza Margherita"
               />
             </div>
             <div>
-              <Label htmlFor="price" className="text-slate-300">Preço</Label>
+              <Label htmlFor="price" className="text-gray-700">Preço</Label>
               <Input
                 id="price"
                 name="price"
@@ -106,21 +106,21 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                 step="0.01"
                 min="0"
                 required
-                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                 placeholder="0.00"
               />
             </div>
           </div>
           
           <div>
-            <Label htmlFor="category_id" className="text-slate-300">Categoria</Label>
+            <Label htmlFor="category_id" className="text-gray-700">Categoria</Label>
             <Select name="category_id">
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-700 border-slate-600">
+              <SelectContent className="bg-white border-gray-200">
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id} className="text-white hover:bg-slate-600">
+                  <SelectItem key={category.id} value={category.id} className="text-gray-900 hover:bg-gray-50">
                     {category.name}
                   </SelectItem>
                 ))}
@@ -129,71 +129,71 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
           </div>
 
           <div>
-            <Label htmlFor="description" className="text-slate-300">Descrição</Label>
+            <Label htmlFor="description" className="text-gray-700">Descrição</Label>
             <Textarea
               id="description"
               name="description"
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
               placeholder="Descreva o produto..."
             />
           </div>
 
           <div>
-            <Label htmlFor="image_url" className="text-slate-300">URL da Imagem</Label>
+            <Label htmlFor="image_url" className="text-gray-700">URL da Imagem</Label>
             <Input
               id="image_url"
               name="image_url"
               type="url"
-              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
               placeholder="https://exemplo.com/imagem.jpg"
             />
           </div>
 
-          <div className="border-t border-slate-600 pt-4">
-            <h4 className="text-white font-medium mb-3">Controle de Estoque (Opcional)</h4>
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="text-gray-900 font-medium mb-3">Controle de Estoque (Opcional)</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="initial_stock" className="text-slate-300">Estoque Inicial</Label>
+                <Label htmlFor="initial_stock" className="text-gray-700">Estoque Inicial</Label>
                 <Input
                   id="initial_stock"
                   name="initial_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   placeholder="0"
                 />
               </div>
               <div>
-                <Label htmlFor="unit_cost" className="text-slate-300">Custo Unitário</Label>
+                <Label htmlFor="unit_cost" className="text-gray-700">Custo Unitário</Label>
                 <Input
                   id="unit_cost"
                   name="unit_cost"
                   type="number"
                   step="0.01"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   placeholder="0.00"
                 />
               </div>
               <div>
-                <Label htmlFor="min_stock" className="text-slate-300">Estoque Mínimo</Label>
+                <Label htmlFor="min_stock" className="text-gray-700">Estoque Mínimo</Label>
                 <Input
                   id="min_stock"
                   name="min_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   placeholder="5"
                 />
               </div>
               <div>
-                <Label htmlFor="max_stock" className="text-slate-300">Estoque Máximo</Label>
+                <Label htmlFor="max_stock" className="text-gray-700">Estoque Máximo</Label>
                 <Input
                   id="max_stock"
                   name="max_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   placeholder="100"
                 />
               </div>
@@ -205,13 +205,13 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={createProductMutation.isPending}
             >
               {createProductMutation.isPending ? 'Criando...' : 'Criar Produto'}

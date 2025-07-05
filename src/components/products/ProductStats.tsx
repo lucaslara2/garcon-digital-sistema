@@ -34,43 +34,43 @@ const ProductStats = ({ products, categories }: ProductStatsProps) => {
       title: "Total de Produtos",
       value: totalProducts,
       icon: Package,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10"
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
       title: "Produtos Ativos",
       value: activeProducts,
       icon: TrendingUp,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10"
+      color: "text-green-600",
+      bgColor: "bg-green-50"
     },
     {
       title: "Estoque Baixo",
       value: lowStockProducts,
       icon: AlertTriangle,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10"
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
     },
     {
       title: "Preço Médio",
       value: `R$ ${averagePrice.toFixed(2)}`,
       icon: DollarSign,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10"
+      color: "text-amber-600",
+      bgColor: "bg-amber-50"
     },
     {
       title: "Categorias",
       value: totalCategories,
       icon: Grid3X3,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10"
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     },
     {
       title: "Mais Caro",
       value: `R$ ${mostExpensive.toFixed(2)}`,
       icon: Star,
-      color: "text-pink-500",
-      bgColor: "bg-pink-500/10"
+      color: "text-pink-600",
+      bgColor: "bg-pink-50"
     }
   ];
 
@@ -79,12 +79,12 @@ const ProductStats = ({ products, categories }: ProductStatsProps) => {
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="bg-slate-800 border-slate-700">
+          <Card key={index} className="bg-white border-gray-200">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">{stat.title}</p>
-                  <p className="text-white text-2xl font-bold">{stat.value}</p>
+                  <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+                  <p className="text-gray-900 text-2xl font-bold">{stat.value}</p>
                 </div>
                 <div className={`${stat.bgColor} p-2 rounded-lg`}>
                   <Icon className={`h-5 w-5 ${stat.color}`} />
