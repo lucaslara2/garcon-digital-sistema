@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Navbar } from '@/components/layout/Navbar';
@@ -10,11 +9,15 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  Activity
+  Activity,
+  MessageSquare,
+  QrCode
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export function MainDashboard() {
   const { userProfile } = useAuth();
@@ -89,14 +92,40 @@ export function MainDashboard() {
       <Navbar />
       
       <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
+        {/* Header com links rápidos */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Controle do Restaurante
-          </h1>
-          <p className="text-gray-600">
-            Painel de controle completo - {new Date().toLocaleDateString('pt-BR')}
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Controle do Restaurante
+              </h1>
+              <p className="text-gray-600">
+                Painel de controle completo - {new Date().toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+            
+            {/* Ações Rápidas */}
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to="/orders">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Ver Pedidos
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/pos">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Novo Pedido
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/whatsapp">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -104,7 +133,7 @@ export function MainDashboard() {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="bg-white border border-gray-200 shadow-sm">
+              <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -129,22 +158,22 @@ export function MainDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pedidos Ativos */}
+          {/* Pedidos Ativos - Atualizado */}
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
                     <Activity className="h-5 w-5 mr-2 text-blue-600" />
-                    Pedidos Ativos
+                    Pedidos Recentes
                   </CardTitle>
                   <CardDescription className="text-gray-600 mt-1">
-                    Acompanhe os pedidos em andamento
+                    Últimos pedidos do sistema
                   </CardDescription>
                 </div>
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                  {activeOrders.length} ativos
-                </Badge>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/orders">Ver Todos</Link>
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -174,56 +203,66 @@ export function MainDashboard() {
             </CardContent>
           </Card>
 
-          {/* Resumo do Dia */}
+          {/* Ações Rápidas - Novo */}
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
                 <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                Resumo do Dia
+                Ações Rápidas
               </CardTitle>
               <CardDescription className="text-gray-600 mt-1">
-                Performance de hoje vs. ontem
+                Acesso rápido às principais funcionalidades
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Pedidos Finalizados</div>
-                      <div className="text-xs text-gray-600">Hoje: 28 pedidos</div>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    +12%
-                  </Badge>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button asChild className="h-16 flex flex-col items-center justify-center">
+                  <Link to="/pos">
+                    <ShoppingCart className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Novo Pedido</span>
+                  </Link>
+                </Button>
 
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <div className="flex items-center space-x-3">
-                    <DollarSign className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Faturamento</div>
-                      <div className="text-xs text-gray-600">Meta: R$ 3.000</div>
-                    </div>
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                    82%
-                  </Badge>
-                </div>
+                <Button asChild variant="outline" className="h-16 flex flex-col items-center justify-center">
+                  <Link to="/kitchen">
+                    <ChefHat className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Cozinha</span>
+                  </Link>
+                </Button>
 
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
-                  <div className="flex items-center space-x-3">
-                    <AlertTriangle className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Produtos em Falta</div>
-                      <div className="text-xs text-gray-600">Verificar estoque</div>
-                    </div>
+                <Button asChild variant="outline" className="h-16 flex flex-col items-center justify-center">
+                  <Link to="/whatsapp">
+                    <MessageSquare className="h-6 w-6 mb-2" />
+                    <span className="text-sm">WhatsApp</span>
+                  </Link>
+                </Button>
+
+                <Button asChild variant="outline" className="h-16 flex flex-col items-center justify-center">
+                  <Link to="/management">
+                    <Settings className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Gestão</span>
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Link do Cardápio Digital */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Cardápio Digital</p>
+                    <p className="text-xs text-blue-700">Compartilhe com seus clientes</p>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-                    3 itens
-                  </Badge>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/menu/${userProfile?.restaurant_id}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success('Link copiado!');
+                    }}
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>

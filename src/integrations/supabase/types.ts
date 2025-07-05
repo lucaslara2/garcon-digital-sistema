@@ -148,6 +148,8 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean | null
+          is_whatsapp_enabled: boolean | null
+          last_login: string | null
           name: string
           password_hash: string
           phone: string
@@ -161,6 +163,8 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          is_whatsapp_enabled?: boolean | null
+          last_login?: string | null
           name: string
           password_hash: string
           phone: string
@@ -174,6 +178,8 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          is_whatsapp_enabled?: boolean | null
+          last_login?: string | null
           name?: string
           password_hash?: string
           phone?: string
@@ -614,6 +620,51 @@ export type Database = {
           },
         ]
       }
+      order_item_addons: {
+        Row: {
+          addon_id: string
+          created_at: string
+          id: string
+          order_item_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          addon_id: string
+          created_at?: string
+          id?: string
+          order_item_id: string
+          quantity?: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          addon_id?: string
+          created_at?: string
+          id?: string
+          order_item_id?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_addons_addon_id_fkey"
+            columns: ["addon_id"]
+            isOneToOne: false
+            referencedRelation: "product_addons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_addons_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -673,11 +724,14 @@ export type Database = {
           customer_phone: string | null
           delivery_address: string | null
           delivery_fee: number | null
+          delivery_instructions: string | null
+          estimated_delivery_time: string | null
           id: string
           notes: string | null
           order_type: Database["public"]["Enums"]["order_type"]
           points_earned: number | null
           points_used: number | null
+          printed_at: string | null
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
@@ -696,11 +750,14 @@ export type Database = {
           customer_phone?: string | null
           delivery_address?: string | null
           delivery_fee?: number | null
+          delivery_instructions?: string | null
+          estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
           order_type?: Database["public"]["Enums"]["order_type"]
           points_earned?: number | null
           points_used?: number | null
+          printed_at?: string | null
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -719,11 +776,14 @@ export type Database = {
           customer_phone?: string | null
           delivery_address?: string | null
           delivery_fee?: number | null
+          delivery_instructions?: string | null
+          estimated_delivery_time?: string | null
           id?: string
           notes?: string | null
           order_type?: Database["public"]["Enums"]["order_type"]
           points_earned?: number | null
           points_used?: number | null
+          printed_at?: string | null
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -880,6 +940,41 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_addons: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_addons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -1675,6 +1770,66 @@ export type Database = {
           },
         ]
       }
+      whatsapp_campaigns: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          discount_percentage: number | null
+          id: string
+          image_url: string | null
+          message: string
+          restaurant_id: string
+          sent_at: string | null
+          sent_count: number | null
+          status: string | null
+          target_audience: string | null
+          title: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          discount_percentage?: number | null
+          id?: string
+          image_url?: string | null
+          message: string
+          restaurant_id: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          target_audience?: string | null
+          title: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          discount_percentage?: number | null
+          id?: string
+          image_url?: string | null
+          message?: string
+          restaurant_id?: string
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          target_audience?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_campaigns_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_campaigns_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_with_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_customers: {
         Row: {
           created_at: string
@@ -1763,6 +1918,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_order_total: {
+        Args: { order_uuid: string }
+        Returns: number
+      }
       check_restaurant_plan_active: {
         Args: { restaurant_uuid: string }
         Returns: boolean
