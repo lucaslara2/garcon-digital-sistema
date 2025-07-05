@@ -29,8 +29,8 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
 
   if (!products?.length) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 h-full shadow-sm">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+      <div className="bg-white rounded-lg border border-gray-200 h-full shadow-sm">
+        <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <div className="bg-blue-600 p-2 rounded-lg mr-3">
               <Package className="h-4 w-4 text-white" />
@@ -50,8 +50,8 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 h-full flex flex-col shadow-sm">
-      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+    <div className="bg-white rounded-lg border border-gray-200 h-full flex flex-col shadow-sm">
+      <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <div className="bg-blue-600 p-2 rounded-lg mr-3">

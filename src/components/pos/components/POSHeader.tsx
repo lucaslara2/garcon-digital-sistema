@@ -50,10 +50,10 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
               <h1 className="text-lg font-bold text-gray-900">
                 Sistema PDV
               </h1>
-              <p className="text-xs text-gray-500 flex items-center">
+              <div className="text-xs text-gray-500 flex items-center">
                 <span>{userProfile.name}</span>
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full ml-2"></div>
-              </p>
+              </div>
             </div>
           </div>
           
@@ -69,13 +69,13 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   onClick={() => onViewChange(item.id as any)}
-                  className="relative px-3 py-2 text-sm rounded-md transition-colors"
+                  className="relative px-3 py-2 text-sm rounded-md transition-colors h-9"
                 >
                   <Icon className="h-4 w-4 mr-1.5" />
                   {item.label}
                   
                   {item.count && (
-                    <Badge className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    <Badge className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full h-5">
                       {item.count}
                     </Badge>
                   )}
@@ -85,7 +85,7 @@ export function POSHeader({ userProfile, activeView, onViewChange, totalItems, t
           </div>
 
           {/* Cart Summary */}
-          <div className="bg-gray-50 px-4 py-2 rounded-lg border">
+          <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
             <div className="flex items-center space-x-4 text-sm">
               <div className="flex items-center space-x-2">
                 <div className="bg-blue-100 p-1.5 rounded">

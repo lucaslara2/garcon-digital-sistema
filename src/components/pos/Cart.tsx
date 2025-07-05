@@ -25,8 +25,8 @@ export function Cart({ cart, onAddToCart, onRemoveFromCart, onClearCart }: CartP
   const totalValue = cart.reduce((sum, item) => sum + item.total, 0);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
-      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
+      <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
             <div className="bg-green-600 p-2 rounded-lg mr-3">
@@ -113,7 +113,7 @@ export function Cart({ cart, onAddToCart, onRemoveFromCart, onClearCart }: CartP
             </div>
           </ScrollArea>
 
-          <div className="border-t border-gray-100 p-4 bg-gray-50/50 rounded-b-xl">
+          <div className="border-t border-gray-100 p-4 bg-gray-50 rounded-b-lg">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Subtotal:</span>

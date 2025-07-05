@@ -33,9 +33,11 @@ export function PaymentSection({
 }: PaymentSectionProps) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-          <Receipt className="h-4 w-4 mr-2 text-blue-600" />
+          <div className="bg-green-600 p-2 rounded-lg mr-3">
+            <Receipt className="h-4 w-4 text-white" />
+          </div>
           Finalizar Pagamento
         </h2>
       </div>
@@ -111,7 +113,7 @@ export function PaymentSection({
             </div>
             
             {amountPaid && parseFloat(amountPaid) >= total && (
-              <div className="bg-green-100 rounded-lg p-3 border border-green-200">
+              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                 <div className="flex justify-between items-center">
                   <span className="text-green-800 font-medium">Troco:</span>
                   <span className="text-lg font-bold text-green-800">R$ {change.toFixed(2)}</span>

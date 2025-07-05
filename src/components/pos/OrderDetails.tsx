@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -113,8 +114,8 @@ export function OrderDetails({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
           <div className="bg-blue-600 p-2 rounded-lg mr-3">
             <Users className="h-4 w-4 text-white" />

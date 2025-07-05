@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,8 +115,8 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: A
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
-      <div className="p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
+      <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
           {getIcon()}
           {getTitle()}
