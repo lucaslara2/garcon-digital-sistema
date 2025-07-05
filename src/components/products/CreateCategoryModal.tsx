@@ -9,6 +9,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import RestaurantSelector from '@/components/admin/RestaurantSelector';
 
 interface CreateCategoryModalProps {
   open: boolean;
@@ -18,14 +19,22 @@ interface CreateCategoryModalProps {
 const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) => {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
+  const [selectedRestaurantId, setSelectedRestaurantId] = React.useState<string | null>(null);
+
+  const isAdmin = userProfile?.role === 'admin';
+  const effectiveRestaurantId = isAdmin ? selectedRestaurantId : userProfile?.restaurant_id;
 
   const createCategoryMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      if (!effectiveRestaurantId) {
+        throw new Error('Restaurante deve ser selecionado');
+      }
+
       const categoryData = {
         name: formData.get('name') as string,
         description: formData.get('description') as string,
         display_order: parseInt(formData.get('display_order') as string) || 0,
-        restaurant_id: userProfile?.restaurant_id,
+        restaurant_id: effectiveRestaurantId,
         is_active: true
       };
 
@@ -41,6 +50,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       onOpenChange(false);
+      setSelectedRestaurantId(null);
       toast.success('Categoria criada com sucesso!');
     },
     onError: (error) => {
@@ -50,6 +60,12 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (isAdmin && !selectedRestaurantId) {
+      toast.error('Por favor, selecione um restaurante');
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     createCategoryMutation.mutate(formData);
   };
@@ -62,6 +78,19 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-5">
+          {isAdmin && (
+            <div className="animate-fade-in" style={{ animationDelay: '0.05s' }}>
+              <Label className="text-gray-700 font-medium">Restaurante</Label>
+              <div className="mt-1">
+                <RestaurantSelector
+                  selectedRestaurantId={selectedRestaurantId}
+                  onRestaurantChange={setSelectedRestaurantId}
+                  placeholder="Selecione o restaurante"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
             <Label htmlFor="name" className="text-gray-700 font-medium">Nome da Categoria</Label>
             <Input
@@ -108,7 +137,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              disabled={createCategoryMutation.isPending}
+              disabled={createCategoryMutation.isPending || (isAdmin && !selectedRestaurantId)}
             >
               {createCategoryMutation.isPending ? 'Criando...' : 'Criar Categoria'}
             </Button>
