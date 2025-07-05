@@ -9,6 +9,8 @@ import { ProductGrid } from './ProductGrid';
 import { OrderDetails } from './OrderDetails';
 import { Cart } from './Cart';
 import { PaymentSection } from './PaymentSection';
+import { ActiveOrders } from './ActiveOrders';
+import { OrderTicket } from './OrderTicket';
 import { Calculator } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -30,6 +32,7 @@ const POSSystem = () => {
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   // Fetch products for POS
   const { data: products } = useQuery({
@@ -129,6 +132,7 @@ const POSSystem = () => {
     },
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['pos-tables'] });
+      queryClient.invalidateQueries({ queryKey: ['active-orders'] });
       clearCart();
       toast.success(`Pedido #${order.id.slice(-8)} processado com sucesso!`);
     },
@@ -234,14 +238,14 @@ const POSSystem = () => {
           className="mb-8"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Products Section */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Nova Venda - Products Section */}
+          <div className="xl:col-span-1">
             <ProductGrid products={products} onAddToCart={addToCart} />
           </div>
 
-          {/* Cart and Payment Section */}
-          <div className="space-y-6">
+          {/* Cart e Payment Section */}
+          <div className="xl:col-span-1 space-y-6">
             <OrderDetails
               selectedTable={selectedTable}
               setSelectedTable={setSelectedTable}
@@ -270,6 +274,19 @@ const POSSystem = () => {
                 isProcessing={processOrderMutation.isPending}
               />
             )}
+          </div>
+
+          {/* Pedidos Ativos */}
+          <div className="xl:col-span-1">
+            <ActiveOrders 
+              onOrderSelect={setSelectedOrder}
+              selectedOrderId={selectedOrder?.id || null}
+            />
+          </div>
+
+          {/* Comanda do Pedido */}
+          <div className="xl:col-span-1">
+            <OrderTicket order={selectedOrder} />
           </div>
         </div>
       </div>
