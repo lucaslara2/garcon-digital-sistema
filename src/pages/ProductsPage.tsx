@@ -1,15 +1,13 @@
 
 import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import MenuManager from '@/components/menu/MenuManager';
+import ProductsManager from '@/components/products/ProductsManager';
 
 const ProductsPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
-      <div className="container mx-auto">
-        <MenuManager />
-      </div>
+      <ProductsManager />
     </div>
   );
 };
