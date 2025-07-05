@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/dom';
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { Cart } from '@/components/pos/Cart';
@@ -17,29 +18,19 @@ describe('Cart Component', () => {
   const mockCartItems = [
     {
       id: '1',
-      product: {
-        id: '1',
-        name: 'Test Product',
-        price: 10.00,
-        description: 'Test Description',
-        image_url: null,
-        is_active: true,
-        category_id: null,
-        restaurant_id: 'test-restaurant',
-        created_at: '2023-01-01',
-        updated_at: '2023-01-01'
-      },
+      name: 'Test Product',
+      price: 10.00,
       quantity: 2,
+      total: 20.00,
       notes: ''
     }
   ];
 
   const mockProps = {
-    items: mockCartItems,
-    onUpdateQuantity: vi.fn(),
-    onRemoveItem: vi.fn(),
-    onClearCart: vi.fn(),
-    onCheckout: vi.fn()
+    cart: mockCartItems,
+    onAddToCart: vi.fn(),
+    onRemoveFromCart: vi.fn(),
+    onClearCart: vi.fn()
   };
 
   it('renders cart items correctly', () => {
@@ -49,22 +40,22 @@ describe('Cart Component', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('calls onUpdateQuantity when quantity is changed', () => {
+  it('calls onAddToCart when plus button is clicked', () => {
     render(<Cart {...mockProps} />);
     
-    const increaseButton = screen.getByText('+');
+    const increaseButton = screen.getByRole('button', { name: /plus/i });
     fireEvent.click(increaseButton);
     
-    expect(mockProps.onUpdateQuantity).toHaveBeenCalledWith('1', 3);
+    expect(mockProps.onAddToCart).toHaveBeenCalledWith(mockCartItems[0]);
   });
 
-  it('calls onRemoveItem when remove button is clicked', () => {
+  it('calls onRemoveFromCart when minus button is clicked', () => {
     render(<Cart {...mockProps} />);
     
-    const removeButton = screen.getByText('Remover');
-    fireEvent.click(removeButton);
+    const decreaseButton = screen.getByRole('button', { name: /minus/i });
+    fireEvent.click(decreaseButton);
     
-    expect(mockProps.onRemoveItem).toHaveBeenCalledWith('1');
+    expect(mockProps.onRemoveFromCart).toHaveBeenCalledWith('1');
   });
 
   it('displays correct total', () => {

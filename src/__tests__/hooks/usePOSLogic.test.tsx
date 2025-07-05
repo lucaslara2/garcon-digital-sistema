@@ -29,6 +29,16 @@ vi.mock('sonner', () => ({
   }
 }));
 
+// Mock AuthProvider
+vi.mock('@/components/AuthProvider', () => ({
+  useAuth: () => ({
+    userProfile: {
+      id: 'test-user',
+      restaurant_id: 'test-restaurant'
+    }
+  })
+}));
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -51,8 +61,8 @@ describe('usePOSLogic Hook', () => {
       wrapper: createWrapper(),
     });
 
-    expect(result.current.cartItems).toEqual([]);
-    expect(result.current.total).toBe(0);
+    expect(result.current.cart).toEqual([]);
+    expect(result.current.getTotal()).toBe(0);
   });
 
   it('should add item to cart', () => {
@@ -77,9 +87,9 @@ describe('usePOSLogic Hook', () => {
       result.current.addToCart(mockProduct);
     });
 
-    expect(result.current.cartItems).toHaveLength(1);
-    expect(result.current.cartItems[0].product.name).toBe('Test Product');
-    expect(result.current.total).toBe(10.00);
+    expect(result.current.cart).toHaveLength(1);
+    expect(result.current.cart[0].name).toBe('Test Product');
+    expect(result.current.getTotal()).toBe(10.00);
   });
 
   it('should remove item from cart', () => {
@@ -108,7 +118,7 @@ describe('usePOSLogic Hook', () => {
       result.current.removeFromCart('1');
     });
 
-    expect(result.current.cartItems).toHaveLength(0);
-    expect(result.current.total).toBe(0);
+    expect(result.current.cart).toHaveLength(0);
+    expect(result.current.getTotal()).toBe(0);
   });
 });
