@@ -40,7 +40,7 @@ const POSSystem = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  const [activeView, setActiveView] = useState<'new-order' | 'pending' | 'preparing' | 'tickets'>('new-order');
+  const [activeView, setActiveView] = useState<'new-order' | 'orders'>('new-order');
   const [showClientManager, setShowClientManager] = useState(false);
   const [showWhatsAppManager, setShowWhatsAppManager] = useState(false);
 
@@ -317,19 +317,10 @@ const POSSystem = () => {
           />
         )}
 
-        {(activeView === 'pending' || activeView === 'preparing') && (
+        {activeView === 'orders' && (
           <OrdersView
             selectedOrder={selectedOrder}
             onOrderSelect={setSelectedOrder}
-            filterStatus={activeView === 'pending' ? 'pending' : 'preparing'}
-          />
-        )}
-
-        {activeView === 'tickets' && (
-          <OrdersView
-            selectedOrder={selectedOrder}
-            onOrderSelect={setSelectedOrder}
-            filterStatus="ready"
           />
         )}
       </div>

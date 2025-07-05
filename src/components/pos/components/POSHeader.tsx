@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingCart, 
-  Clock, 
-  CheckCircle, 
   Receipt,
   Users,
   MessageSquare
@@ -57,30 +55,12 @@ export function POSHeader({
             </Button>
             
             <Button
-              variant={activeView === 'pending' ? 'default' : 'outline'}
-              onClick={() => onViewChange('pending')}
-              size="sm"
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              Pendentes
-            </Button>
-            
-            <Button
-              variant={activeView === 'preparing' ? 'default' : 'outline'}
-              onClick={() => onViewChange('preparing')}
+              variant={activeView === 'orders' ? 'default' : 'outline'}
+              onClick={() => onViewChange('orders')}
               size="sm"
             >
               <Receipt className="h-4 w-4 mr-2" />
-              Preparando
-            </Button>
-            
-            <Button
-              variant={activeView === 'tickets' ? 'default' : 'outline'}
-              onClick={() => onViewChange('tickets')}
-              size="sm"
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Prontos
+              Pedidos
             </Button>
           </div>
 
