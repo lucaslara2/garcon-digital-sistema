@@ -93,7 +93,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                 id="name"
                 name="name"
                 required
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                 placeholder="Ex: Pizza Margherita"
               />
             </div>
@@ -106,7 +106,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                 step="0.01"
                 min="0"
                 required
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                 placeholder="0.00"
               />
             </div>
@@ -120,7 +120,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
               </SelectTrigger>
               <SelectContent className="bg-slate-700 border-slate-600">
                 {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id} className="text-white">
+                  <SelectItem key={category.id} value={category.id} className="text-white hover:bg-slate-600">
                     {category.name}
                   </SelectItem>
                 ))}
@@ -133,7 +133,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
             <Textarea
               id="description"
               name="description"
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
               placeholder="Descreva o produto..."
             />
           </div>
@@ -144,7 +144,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
               id="image_url"
               name="image_url"
               type="url"
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
               placeholder="https://exemplo.com/imagem.jpg"
             />
           </div>
@@ -159,7 +159,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                   name="initial_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                   placeholder="0"
                 />
               </div>
@@ -171,7 +171,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                   type="number"
                   step="0.01"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                   placeholder="0.00"
                 />
               </div>
@@ -182,7 +182,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                   name="min_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                   placeholder="5"
                 />
               </div>
@@ -193,7 +193,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                   name="max_stock"
                   type="number"
                   min="0"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
                   placeholder="100"
                 />
               </div>

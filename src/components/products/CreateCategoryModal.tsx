@@ -68,7 +68,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
               id="name"
               name="name"
               required
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
               placeholder="Ex: Pizzas, Bebidas, Sobremesas"
             />
           </div>
@@ -78,7 +78,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
             <Textarea
               id="description"
               name="description"
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
               placeholder="Descreva a categoria..."
             />
           </div>
@@ -90,7 +90,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
               name="display_order"
               type="number"
               min="0"
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
               placeholder="0"
             />
           </div>
