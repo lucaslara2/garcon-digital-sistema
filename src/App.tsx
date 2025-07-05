@@ -17,6 +17,7 @@ import DigitalMenu from "@/pages/DigitalMenu";
 import NotFound from "@/pages/NotFound";
 import Landing from "@/pages/Landing";
 import MasterPage from "@/pages/MasterPage";
+import ProductsPage from "@/pages/ProductsPage";
 import { ReportsView } from "@/components/analytics/ReportsView";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useState, useEffect } from "react";
@@ -62,6 +63,11 @@ function App() {
               <Route path="/kitchen" element={
                 <ProtectedRoute allowedRoles={['kitchen', 'restaurant_owner', 'admin']}>
                   <KitchenPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/products" element={
+                <ProtectedRoute allowedRoles={['restaurant_owner', 'admin']}>
+                  <ProductsPage />
                 </ProtectedRoute>
               } />
               <Route path="/management" element={

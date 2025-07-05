@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
@@ -13,7 +12,8 @@ import {
   ClipboardList,
   MessageSquare,
   QrCode,
-  Shield
+  Shield,
+  Package
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +42,7 @@ export const Navbar = () => {
     { path: '/orders', icon: ClipboardList, label: 'Pedidos' },
     { path: '/pos', icon: ShoppingCart, label: 'PDV' },
     { path: '/kitchen', icon: ChefHat, label: 'Cozinha' },
+    { path: '/products', icon: Package, label: 'Produtos' },
     { path: '/management', icon: Settings, label: 'Gestão' },
     { path: '/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   ];
