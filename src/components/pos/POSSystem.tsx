@@ -26,7 +26,7 @@ const POSSystem = () => {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>('balcao');
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState('');
@@ -76,9 +76,9 @@ const POSSystem = () => {
         .from('orders')
         .insert({
           restaurant_id: userProfile?.restaurant_id,
-          table_id: selectedTable || null,
+          table_id: selectedTable && selectedTable !== 'balcao' ? selectedTable : null,
           customer_name: customerName || 'Cliente Balcão',
-          order_type: selectedTable ? 'dine_in' : 'takeout',
+          order_type: selectedTable && selectedTable !== 'balcao' ? 'dine_in' : 'takeout',
           subtotal: getSubtotal(),
           total: getTotal(),
           status: 'preparing'
@@ -118,7 +118,7 @@ const POSSystem = () => {
       if (paymentError) throw paymentError;
 
       // Update table status if table order
-      if (selectedTable) {
+      if (selectedTable && selectedTable !== 'balcao') {
         await supabase
           .from('restaurant_tables')
           .update({ status: 'occupied' })
@@ -181,7 +181,7 @@ const POSSystem = () => {
 
   const clearCart = () => {
     setCart([]);
-    setSelectedTable('');
+    setSelectedTable('balcao');
     setCustomerName('');
     setAmountPaid('');
   };

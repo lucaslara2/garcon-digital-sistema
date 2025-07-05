@@ -43,7 +43,7 @@ export function OrderDetails({
               <SelectValue placeholder="Pedido Balcão" />
             </SelectTrigger>
             <SelectContent className="bg-slate-800 border-slate-600">
-              <SelectItem value="">Pedido Balcão</SelectItem>
+              <SelectItem value="balcao" className="text-white">Pedido Balcão</SelectItem>
               {tables?.map((table) => (
                 <SelectItem key={table.id} value={table.id} className="text-white">
                   Mesa {table.table_number} ({table.seats} lugares)
