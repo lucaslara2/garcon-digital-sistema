@@ -27,6 +27,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
         name: formData.get('name') as string,
         description: formData.get('description') as string,
         price: parseFloat(formData.get('price') as string),
+        cost_price: parseFloat(formData.get('cost_price') as string) || 0,
         category_id: formData.get('category_id') as string || null,
         image_url: formData.get('image_url') as string || null,
         restaurant_id: userProfile?.restaurant_id,
@@ -98,7 +99,41 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
               />
             </div>
             <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
-              <Label htmlFor="price" className="text-gray-700 font-medium">Preço</Label>
+              <Label htmlFor="category_id" className="text-gray-700 font-medium">Categoria</Label>
+              <Select name="category_id">
+                <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1">
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-200 animate-scale-in">
+                  {categories.map((category) => (
+                    <SelectItem 
+                      key={category.id} 
+                      value={category.id} 
+                      className="text-gray-900 hover:bg-gray-50 focus:bg-blue-50 focus:text-blue-900 transition-colors duration-200"
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <Label htmlFor="cost_price" className="text-gray-700 font-medium">Preço de Custo</Label>
+              <Input
+                id="cost_price"
+                name="cost_price"
+                type="number"
+                step="0.01"
+                min="0"
+                className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1"
+                placeholder="0.00"
+              />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
+              <Label htmlFor="price" className="text-gray-700 font-medium">Preço de Venda</Label>
               <Input
                 id="price"
                 name="price"
@@ -111,28 +146,8 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
               />
             </div>
           </div>
-          
-          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <Label htmlFor="category_id" className="text-gray-700 font-medium">Categoria</Label>
-            <Select name="category_id">
-              <SelectTrigger className="bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200 animate-scale-in">
-                {categories.map((category) => (
-                  <SelectItem 
-                    key={category.id} 
-                    value={category.id} 
-                    className="text-gray-900 hover:bg-gray-50 focus:bg-blue-50 focus:text-blue-900 transition-colors duration-200"
-                  >
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
+          <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <Label htmlFor="description" className="text-gray-700 font-medium">Descrição</Label>
             <Textarea
               id="description"
@@ -143,7 +158,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
             />
           </div>
 
-          <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className="animate-fade-in" style={{ animationDelay: '0.35s' }}>
             <Label htmlFor="image_url" className="text-gray-700 font-medium">URL da Imagem</Label>
             <Input
               id="image_url"
@@ -154,7 +169,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
             />
           </div>
 
-          <div className="border-t border-gray-200 pt-5 animate-fade-in" style={{ animationDelay: '0.35s' }}>
+          <div className="border-t border-gray-200 pt-5 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <h4 className="text-gray-900 font-semibold mb-4 text-lg">Controle de Estoque (Opcional)</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -169,7 +184,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                 />
               </div>
               <div>
-                <Label htmlFor="unit_cost" className="text-gray-700 font-medium">Custo Unitário</Label>
+                <Label htmlFor="unit_cost" className="text-gray-700 font-medium">Custo Inventário</Label>
                 <Input
                   id="unit_cost"
                   name="unit_cost"
@@ -205,7 +220,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-5 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="flex justify-end space-x-3 pt-5 animate-fade-in" style={{ animationDelay: '0.45s' }}>
             <Button
               type="button"
               variant="outline"
