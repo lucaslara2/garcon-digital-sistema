@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,24 +19,40 @@ import {
   Zap,
   Phone,
   Mail,
-  FileText
+  FileText,
+  Filter,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ImplementationTicketsView = () => {
+interface ImplementationTicketsViewProps {
+  contextRestaurantId?: string;
+}
+
+const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ contextRestaurantId }) => {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+
+  // Limpar filtros quando contexto mudar
+  useEffect(() => {
+    if (contextRestaurantId) {
+      setSearchTerm('');
+      setStatusFilter('all');
+      setPriorityFilter('all');
+    }
+  }, [contextRestaurantId]);
 
   const { data: implementationTickets, isLoading } = useQuery({
-    queryKey: ['implementation-tickets', statusFilter],
+    queryKey: ['implementation-tickets', statusFilter, contextRestaurantId],
     queryFn: async () => {
       let query = supabase
         .from('tickets')
         .select(`
           *,
-          restaurant:restaurants(name, email, phone, plan_type, status),
+          restaurant:restaurants(name, email, phone, plan_type, status, address),
           user:user_profiles!tickets_user_id_fkey(name)
         `)
         .eq('category', 'implementation')
@@ -45,6 +60,10 @@ const ImplementationTicketsView = () => {
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
+      }
+
+      if (contextRestaurantId) {
+        query = query.eq('restaurant_id', contextRestaurantId);
       }
 
       const { data, error } = await query;
@@ -139,14 +158,46 @@ const ImplementationTicketsView = () => {
     }
   };
 
-  const filteredTickets = implementationTickets?.filter(ticket =>
-    searchTerm === '' || 
-    ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.restaurant?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = implementationTickets?.filter(ticket => {
+    const matchesSearch = searchTerm === '' || 
+      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.restaurant?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    
+    return matchesSearch && matchesPriority;
+  });
+
+  const clearContext = () => {
+    // Esta função seria chamada pela parent component se necessário
+  };
 
   return (
     <div className="space-y-6">
+      {/* Context Alert */}
+      {contextRestaurantId && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-blue-600" />
+                <span className="text-blue-800 font-medium">
+                  Visualizando implementação para restaurante específico
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={clearContext}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
@@ -170,6 +221,18 @@ const ImplementationTicketsView = () => {
                 <SelectItem value="in_progress">Em implementação</SelectItem>
                 <SelectItem value="resolved">Implementados</SelectItem>
                 <SelectItem value="closed">Finalizados</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as prioridades</SelectItem>
+                <SelectItem value="urgent">Urgente</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -238,6 +301,11 @@ const ImplementationTicketsView = () => {
           <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Tickets de Implementação ({filteredTickets?.length || 0})
+            {contextRestaurantId && (
+              <Badge className="bg-blue-100 text-blue-800">
+                Restaurante Específico
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -288,6 +356,14 @@ const ImplementationTicketsView = () => {
                               {ticket.restaurant.phone}
                             </span>
                           </div>
+                          {ticket.restaurant.address && (
+                            <div className="mt-2 text-sm text-blue-700">
+                              <span className="flex items-start gap-2">
+                                <Building2 className="h-3 w-3 mt-0.5" />
+                                {ticket.restaurant.address}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
                       
@@ -362,8 +438,13 @@ const ImplementationTicketsView = () => {
               {(!filteredTickets || filteredTickets.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
                   <Settings className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>Nenhum ticket de implementação encontrado</p>
-                  {searchTerm && (
+                  <p>
+                    {contextRestaurantId 
+                      ? 'Nenhum ticket de implementação encontrado para este restaurante'
+                      : 'Nenhum ticket de implementação encontrado'
+                    }
+                  </p>
+                  {(searchTerm || priorityFilter !== 'all') && (
                     <p className="text-sm mt-2">Tente ajustar sua busca ou filtros</p>
                   )}
                 </div>

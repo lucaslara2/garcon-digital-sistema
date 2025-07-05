@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +25,7 @@ import RestaurantRegistrationModal from './RestaurantRegistrationModal';
 const MinimalMasterDashboard = () => {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [contextData, setContextData] = useState<{ restaurantId?: string }>({});
 
   // Buscar estatísticas
   const { data: stats } = useQuery({
@@ -67,10 +67,18 @@ const MinimalMasterDashboard = () => {
   const handleTabClick = (tabId: string) => {
     console.log('Changing tab from', activeTab, 'to', tabId);
     setActiveTab(tabId);
+    // Limpar contexto ao navegar normalmente
+    setContextData({});
+  };
+
+  const handleNavigateToTab = (tabId: string, restaurantId?: string) => {
+    console.log('Navigating to tab:', tabId, 'with restaurant:', restaurantId);
+    setActiveTab(tabId);
+    setContextData({ restaurantId });
   };
 
   const renderTabContent = () => {
-    console.log('Rendering content for tab:', activeTab);
+    console.log('Rendering content for tab:', activeTab, 'with context:', contextData);
     
     switch (activeTab) {
       case 'overview':
@@ -208,9 +216,9 @@ const MinimalMasterDashboard = () => {
       case 'tickets':
         return <MasterTicketsView />;
       case 'restaurants':
-        return <MasterRestaurantsView />;
+        return <MasterRestaurantsView onNavigateToTab={handleNavigateToTab} />;
       case 'implementation':
-        return <ImplementationTicketsView />;
+        return <ImplementationTicketsView contextRestaurantId={contextData.restaurantId} />;
       case 'staff':
         return <MasterStaffView />;
       default:
@@ -227,6 +235,11 @@ const MinimalMasterDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
               <p className="text-gray-600">Gestão completa do sistema</p>
+              {contextData.restaurantId && (
+                <p className="text-sm text-blue-600 mt-1">
+                  Contexto: Restaurante selecionado
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <RestaurantRegistrationModal />
@@ -260,6 +273,11 @@ const MinimalMasterDashboard = () => {
                   {tab.id === 'implementation' && stats?.pendingImplementation > 0 && (
                     <Badge className="bg-red-500 text-white text-xs px-1 py-0 min-w-[16px] h-4">
                       {stats.pendingImplementation}
+                    </Badge>
+                  )}
+                  {tab.id === 'implementation' && contextData.restaurantId && (
+                    <Badge className="bg-blue-500 text-white text-xs px-1 py-0 min-w-[16px] h-4">
+                      •
                     </Badge>
                   )}
                 </Button>
