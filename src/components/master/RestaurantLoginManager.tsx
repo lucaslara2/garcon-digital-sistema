@@ -67,39 +67,21 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
     setLoading(true);
     try {
       if (!loginInfo) {
-        // Se não existe usuário para este restaurante, criar um
-        const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
-          email: newEmail,
-          password: 'temp123456', // Senha temporária
-          email_confirm: true,
-          user_metadata: {
-            name: restaurant.name,
-            role: 'restaurant_owner'
-          }
-        });
-
-        if (signUpError) throw signUpError;
-
-        // Criar perfil do usuário
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: newUser.user.id,
-            name: restaurant.name,
-            role: 'restaurant_owner',
-            restaurant_id: restaurant.id
-          });
-
-        if (profileError) throw profileError;
-      } else {
-        // Usar a função do banco para atualizar e-mail
-        const { error } = await supabase.rpc('update_user_email', {
-          user_id: loginInfo.user_id,
-          new_email: newEmail
+        // Garantir que existe um usuário para este restaurante
+        const { error } = await supabase.rpc('ensure_restaurant_user', {
+          restaurant_id: restaurant.id
         });
 
         if (error) throw error;
       }
+
+      // Usar a função do banco para atualizar e-mail
+      const { error } = await supabase.rpc('update_user_email', {
+        user_id: loginInfo?.user_id,
+        new_email: newEmail
+      });
+
+      if (error) throw error;
 
       // Atualizar também o e-mail do restaurante
       const { error: restaurantError } = await supabase
@@ -142,17 +124,20 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
     setLoading(true);
     try {
       if (!loginInfo) {
-        toast({
-          title: "Erro",
-          description: "Primeiro configure o e-mail antes de definir a senha.",
-          variant: "destructive"
+        // Garantir que existe um usuário para este restaurante
+        const { error } = await supabase.rpc('ensure_restaurant_user', {
+          restaurant_id: restaurant.id
         });
-        return;
+
+        if (error) throw error;
+        
+        // Recarregar as informações após criar o usuário
+        await refetchLoginInfo();
       }
 
       // Usar a função do banco para resetar senha
       const { error } = await supabase.rpc('reset_user_password', {
-        user_id: loginInfo.user_id,
+        user_id: loginInfo?.user_id,
         new_password: newPassword
       });
 
@@ -178,45 +163,78 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
   };
 
   const handleLoginAsRestaurant = async () => {
-    if (!loginInfo) {
-      toast({
-        title: "Erro",
-        description: "Configure primeiro as credenciais do restaurante.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
-      // Fazer logout da conta atual
-      await signOut();
+      let userInfo = loginInfo;
       
-      // Aguardar um pouco para garantir que o logout foi processado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Fazer login como o restaurante usando o e-mail atual
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginInfo.email,
-        password: 'temp123456' // Senha padrão ou a última definida
-      });
+      // Se não existe usuário, criar um primeiro
+      if (!userInfo) {
+        console.log('Criando usuário para o restaurante...');
+        const { error } = await supabase.rpc('ensure_restaurant_user', {
+          restaurant_id: restaurant.id
+        });
 
-      if (error) {
+        if (error) throw error;
+        
+        // Recarregar as informações após criar o usuário
+        await refetchLoginInfo();
+        
+        // Aguardar um pouco para o banco processar
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Buscar novamente as informações
+        const { data } = await supabase.rpc('get_restaurant_login_info', {
+          restaurant_id: restaurant.id
+        });
+        
+        userInfo = data && data.length > 0 ? data[0] : null;
+      }
+
+      if (!userInfo || !userInfo.email) {
         toast({
-          title: "Erro no login",
-          description: "Não foi possível fazer login. Verifique se a senha foi definida corretamente.",
+          title: "Erro",
+          description: "Não foi possível obter as informações de login do restaurante.",
           variant: "destructive"
         });
         return;
       }
 
+      console.log('Fazendo logout da conta atual...');
+      // Fazer logout da conta atual
+      await signOut();
+      
+      // Aguardar um pouco para garantir que o logout foi processado
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('Tentando login como:', userInfo.email);
+      // Fazer login como o restaurante usando senha padrão
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: userInfo.email,
+        password: 'temp123456'
+      });
+
+      if (loginError) {
+        console.error('Erro no login:', loginError);
+        toast({
+          title: "Erro no login",
+          description: "Não foi possível fazer login. A senha padrão pode ter sido alterada.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Login realizado com sucesso:', loginData);
+      
       toast({
         title: "Login realizado com sucesso",
         description: `Logado como ${restaurant.name}`,
       });
 
-      // Redirecionar para o dashboard do restaurante
-      window.location.href = '/dashboard';
+      // Aguardar um pouco antes de redirecionar
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1000);
+
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
       toast({
@@ -296,7 +314,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
                   />
                 </div>
                 <div>
-                  <Label>Senha Padrão (se não alterada)</Label>
+                  <Label>Senha Padrão</Label>
                   <Input
                     value="temp123456"
                     readOnly
@@ -447,7 +465,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
           {/* Login como Restaurante */}
           <Button 
             onClick={handleLoginAsRestaurant} 
-            disabled={loading || !loginInfo}
+            disabled={loading}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 col-span-full"
           >
             <User className="h-4 w-4" />
