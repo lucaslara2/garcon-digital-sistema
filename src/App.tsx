@@ -16,6 +16,7 @@ import Menu from "@/pages/Menu";
 import DigitalMenu from "@/pages/DigitalMenu";
 import NotFound from "@/pages/NotFound";
 import Landing from "@/pages/Landing";
+import MasterPage from "@/pages/MasterPage";
 import { ReportsView } from "@/components/analytics/ReportsView";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useState, useEffect } from "react";
@@ -46,6 +47,11 @@ function App() {
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/master" element={
+                <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                  <MasterPage />
                 </ProtectedRoute>
               } />
               <Route path="/pos" element={

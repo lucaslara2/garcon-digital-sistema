@@ -12,7 +12,8 @@ import {
   Settings,
   ClipboardList,
   MessageSquare,
-  QrCode
+  QrCode,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,12 +46,18 @@ export const Navbar = () => {
     { path: '/whatsapp', icon: MessageSquare, label: 'WhatsApp' },
   ];
 
+  // Adicionar item Master para admin e staff
+  if (userProfile?.role === 'admin' || userProfile?.role === 'staff') {
+    menuItems.unshift({ path: '/master', icon: Shield, label: 'Master' });
+  }
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800 border-red-200';
-      case 'restaurant_owner': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'waiter': return 'bg-green-100 text-green-800 border-green-200';
-      case 'cashier': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'staff': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'restaurant_owner': return 'bg-green-100 text-green-800 border-green-200';
+      case 'waiter': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'cashier': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -58,6 +65,7 @@ export const Navbar = () => {
   const getRoleText = (role: string) => {
     switch (role) {
       case 'admin': return 'Administrador';
+      case 'staff': return 'Staff de Suporte';
       case 'restaurant_owner': return 'Proprietário';
       case 'waiter': return 'Garçom';
       case 'cashier': return 'Caixa';
@@ -88,7 +96,9 @@ export const Navbar = () => {
                   <Button 
                     variant={isActive(item.path) ? "default" : "ghost"}
                     size="sm"
-                    className="flex items-center space-x-2"
+                    className={`flex items-center space-x-2 ${
+                      item.path === '/master' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
@@ -101,43 +111,45 @@ export const Navbar = () => {
           {/* Menu do Usuário */}
           <div className="flex items-center space-x-4">
             {/* QR Code do Cardápio */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <QrCode className="h-4 w-4 mr-2" />
-                  QR Menu
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel>Cardápio Digital</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="p-4">
-                  <div className="text-center">
-                    {/* QR Code placeholder - em produção seria gerado dinamicamente */}
-                    <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <QrCode className="h-12 w-12 text-gray-400" />
+            {userProfile?.role !== 'admin' && userProfile?.role !== 'staff' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <QrCode className="h-4 w-4 mr-2" />
+                    QR Menu
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel>Cardápio Digital</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="p-4">
+                    <div className="text-center">
+                      {/* QR Code placeholder - em produção seria gerado dinamicamente */}
+                      <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <QrCode className="h-12 w-12 text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Clientes podem escanear este QR Code para acessar o cardápio
+                      </p>
+                      <div className="bg-gray-50 p-2 rounded text-xs font-mono break-all">
+                        {window.location.origin}/menu/{userProfile?.restaurant_id}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3 w-full"
+                        onClick={() => {
+                          const url = `${window.location.origin}/menu/${userProfile?.restaurant_id}`;
+                          navigator.clipboard.writeText(url);
+                        }}
+                      >
+                        Copiar Link
+                      </Button>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Clientes podem escanear este QR Code para acessar o cardápio
-                    </p>
-                    <div className="bg-gray-50 p-2 rounded text-xs font-mono break-all">
-                      {window.location.origin}/menu/{userProfile?.restaurant_id}
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-3 w-full"
-                      onClick={() => {
-                        const url = `${window.location.origin}/menu/${userProfile?.restaurant_id}`;
-                        navigator.clipboard.writeText(url);
-                      }}
-                    >
-                      Copiar Link
-                    </Button>
                   </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -176,7 +188,9 @@ export const Navbar = () => {
                 <Button 
                   variant={isActive(item.path) ? "default" : "ghost"}
                   size="sm"
-                  className="flex flex-col items-center h-auto py-2 px-3 text-xs"
+                  className={`flex flex-col items-center h-auto py-2 px-3 text-xs ${
+                    item.path === '/master' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
+                  }`}
                 >
                   <Icon className="h-4 w-4 mb-1" />
                   <span>{item.label}</span>
