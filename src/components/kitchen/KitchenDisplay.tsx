@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type OrderStatus = Database['public']['Enums']['order_status'];
 
 const KitchenDisplay = () => {
   const { userProfile } = useAuth();
@@ -48,7 +50,7 @@ const KitchenDisplay = () => {
 
   // Update order status
   const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+    mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
       const { error } = await supabase
         .from('orders')
         .update({ 

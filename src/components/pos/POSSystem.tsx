@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type PaymentMethod = Database['public']['Enums']['payment_method'];
 
 interface CartItem {
   id: string;
@@ -35,7 +37,7 @@ const POSSystem = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState('');
 
   // Fetch products for POS
@@ -114,7 +116,7 @@ const POSSystem = () => {
       const { error: paymentError } = await supabase
         .from('payments')
         .insert({
-          restaurant_id: userProfile?.restaurant_id,
+          restaurant_id: userProfile?.restaurant_id!,
           order_id: order.id,
           amount: getTotal(),
           payment_method: paymentMethod,
@@ -373,7 +375,7 @@ const POSSystem = () => {
 
                   <div>
                     <label className="text-sm font-medium">Método de Pagamento</label>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-2 mt-2">
                       <Button
                         variant={paymentMethod === 'cash' ? 'default' : 'outline'}
                         size="sm"
@@ -383,9 +385,9 @@ const POSSystem = () => {
                         Dinheiro
                       </Button>
                       <Button
-                        variant={paymentMethod === 'card' ? 'default' : 'outline'}
+                        variant={paymentMethod === 'credit_card' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setPaymentMethod('card')}
+                        onClick={() => setPaymentMethod('credit_card')}
                       >
                         <CreditCard className="h-4 w-4 mr-1" />
                         Cartão
@@ -394,6 +396,7 @@ const POSSystem = () => {
                         variant={paymentMethod === 'pix' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPaymentMethod('pix')}
+                        className="col-span-2"
                       >
                         PIX
                       </Button>

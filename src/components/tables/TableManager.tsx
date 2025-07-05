@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type TableStatus = Database['public']['Enums']['table_status'];
 
 const TableManager = () => {
   const { userProfile } = useAuth();
@@ -98,7 +100,7 @@ const TableManager = () => {
 
   // Update Table Status
   const updateTableStatusMutation = useMutation({
-    mutationFn: async ({ tableId, status }: { tableId: string; status: string }) => {
+    mutationFn: async ({ tableId, status }: { tableId: string; status: TableStatus }) => {
       const { error } = await supabase
         .from('restaurant_tables')
         .update({ status })
@@ -122,7 +124,7 @@ const TableManager = () => {
     const tableData = {
       table_number: parseInt(formData.get('table_number') as string),
       seats: parseInt(formData.get('seats') as string),
-      status: 'available'
+      status: 'available' as TableStatus
     };
 
     tableMutation.mutate(tableData);
@@ -133,7 +135,7 @@ const TableManager = () => {
       case 'available': return 'bg-green-500';
       case 'occupied': return 'bg-red-500';
       case 'reserved': return 'bg-yellow-500';
-      case 'cleaning': return 'bg-blue-500';
+      case 'maintenance': return 'bg-blue-500';
       default: return 'bg-gray-500';
     }
   };
@@ -143,7 +145,7 @@ const TableManager = () => {
       case 'available': return 'Disponível';
       case 'occupied': return 'Ocupada';
       case 'reserved': return 'Reservada';
-      case 'cleaning': return 'Limpeza';
+      case 'maintenance': return 'Manutenção';
       default: return 'Desconhecido';
     }
   };
