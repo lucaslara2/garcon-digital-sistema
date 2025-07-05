@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,15 +10,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { UserPlus, Users, Shield, HeadphonesIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 const StaffManagement = () => {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newStaffData, setNewStaffData] = useState({
+  const [newStaffData, setNewStaffData] = useState<{
+    name: string;
+    email: string;
+    role: 'staff' | 'admin';
+  }>({
     name: '',
     email: '',
-    role: 'staff' as const
+    role: 'staff'
   });
 
   // Buscar todos os usuários staff e admin
@@ -101,7 +107,7 @@ const StaffManagement = () => {
 
   // Atualizar role do usuário
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
+    mutationFn: async ({ userId, role }: { userId: string, role: UserRole }) => {
       const { error } = await supabase
         .from('user_profiles')
         .update({ role })
@@ -273,7 +279,7 @@ const StaffManagement = () => {
                             variant="outline"
                             onClick={() => updateRoleMutation.mutate({
                               userId: user.id,
-                              role: 'admin'
+                              role: 'admin' as UserRole
                             })}
                             className="border-slate-600 text-slate-300"
                           >
@@ -286,7 +292,7 @@ const StaffManagement = () => {
                             variant="outline"
                             onClick={() => updateRoleMutation.mutate({
                               userId: user.id,
-                              role: 'staff'
+                              role: 'staff' as UserRole
                             })}
                             className="border-slate-600 text-slate-300"
                           >

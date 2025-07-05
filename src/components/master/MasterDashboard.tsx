@@ -22,6 +22,9 @@ import {
   Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
+
+type RestaurantStatus = Database['public']['Enums']['restaurant_status'];
 
 const MasterDashboard = () => {
   const { userProfile } = useAuth();
@@ -129,7 +132,7 @@ const MasterDashboard = () => {
 
   // Atualizar status do restaurante
   const updateRestaurantMutation = useMutation({
-    mutationFn: async ({ restaurantId, status }: { restaurantId: string, status: string }) => {
+    mutationFn: async ({ restaurantId, status }: { restaurantId: string, status: RestaurantStatus }) => {
       const { error } = await supabase
         .from('restaurants')
         .update({ status, updated_at: new Date().toISOString() })
@@ -446,7 +449,7 @@ const MasterDashboard = () => {
                                   variant="outline"
                                   onClick={() => updateRestaurantMutation.mutate({
                                     restaurantId: restaurant.id,
-                                    status: 'active'
+                                    status: 'active' as RestaurantStatus
                                   })}
                                   className="border-slate-600 text-slate-300"
                                 >
@@ -459,7 +462,7 @@ const MasterDashboard = () => {
                                   variant="outline"
                                   onClick={() => updateRestaurantMutation.mutate({
                                     restaurantId: restaurant.id,
-                                    status: 'blocked'
+                                    status: 'blocked' as RestaurantStatus
                                   })}
                                   className="border-slate-600 text-slate-300"
                                 >
