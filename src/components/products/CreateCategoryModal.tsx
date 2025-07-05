@@ -56,57 +56,58 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white border-gray-200">
+      <DialogContent className="max-w-md bg-white border-gray-200 animate-scale-in">
         <DialogHeader>
-          <DialogTitle className="text-gray-900">Criar Nova Categoria</DialogTitle>
+          <DialogTitle className="text-gray-900 text-xl font-semibold">Criar Nova Categoria</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name" className="text-gray-700">Nome da Categoria</Label>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <Label htmlFor="name" className="text-gray-700 font-medium">Nome da Categoria</Label>
             <Input
               id="name"
               name="name"
               required
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1"
               placeholder="Ex: Pizzas, Bebidas, Sobremesas"
             />
           </div>
           
-          <div>
-            <Label htmlFor="description" className="text-gray-700">Descrição</Label>
+          <div className="animate-fade-in" style={{ animationDelay: '0.15s' }}>
+            <Label htmlFor="description" className="text-gray-700 font-medium">Descrição</Label>
             <Textarea
               id="description"
               name="description"
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1"
               placeholder="Descreva a categoria..."
+              rows={3}
             />
           </div>
 
-          <div>
-            <Label htmlFor="display_order" className="text-gray-700">Ordem de Exibição</Label>
+          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <Label htmlFor="display_order" className="text-gray-700 font-medium">Ordem de Exibição</Label>
             <Input
               id="display_order"
               name="display_order"
               type="number"
               min="0"
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 mt-1"
               placeholder="0"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-5 animate-fade-in" style={{ animationDelay: '0.25s' }}>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:shadow-md transform hover:scale-105 transition-all duration-200"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg transform hover:scale-105 transition-all duration-200"
               disabled={createCategoryMutation.isPending}
             >
               {createCategoryMutation.isPending ? 'Criando...' : 'Criar Categoria'}
