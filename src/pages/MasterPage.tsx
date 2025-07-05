@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Navigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import MasterDashboard from '@/components/master/MasterDashboard';
+import EnhancedMasterDashboard from '@/components/master/EnhancedMasterDashboard';
 
 const MasterPage = () => {
   const { userProfile, loading } = useAuth();
@@ -29,8 +29,8 @@ const MasterPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log('Access granted to master dashboard');
-  return <MasterDashboard />;
+  console.log('Access granted to enhanced master dashboard');
+  return <EnhancedMasterDashboard />;
 };
 
 export default MasterPage;
