@@ -2,60 +2,44 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
+import { Badge } from '@/components/ui/badge';
 import { 
   Building2, 
-  Mail, 
-  Phone, 
+  Search, 
   Calendar, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  AlertTriangle,
-  Search,
-  Settings,
-  Eye,
-  Ticket,
-  CreditCard,
+  Mail, 
+  Phone,
   MapPin,
-  Filter,
   Users,
-  ShoppingCart,
-  TrendingUp,
-  Plus,
-  BarChart3,
-  FileText,
-  Zap
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Eye
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { Database } from '@/integrations/supabase/types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import RestaurantDetailsView from './RestaurantDetailsView';
-
-type RestaurantStatus = Database['public']['Enums']['restaurant_status'];
 
 interface MasterRestaurantsViewProps {
   onNavigateToTab?: (tabId: string, restaurantId?: string) => void;
 }
 
 const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigateToTab }) => {
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [planFilter, setPlanFilter] = useState('all');
-  const [showDetails, setShowDetails] = useState<string | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
 
   const { data: restaurants, isLoading } = useQuery({
-    queryKey: ['master-restaurants'],
+    queryKey: ['restaurants-list'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('*')
+        .select(`
+          *,
+          user_profiles!inner(id, name, role)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -63,500 +47,185 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
     }
   });
 
-  // Buscar estatísticas dos restaurantes
-  const { data: restaurantStats } = useQuery({
-    queryKey: ['restaurants-stats'],
-    queryFn: async () => {
-      if (!restaurants) return new Map();
-
-      const statsMap = new Map();
-      
-      await Promise.all(
-        restaurants.map(async (restaurant) => {
-          const [ordersResult, clientsResult, revenueResult] = await Promise.all([
-            supabase.from('orders').select('id, status').eq('restaurant_id', restaurant.id),
-            supabase.from('clients').select('id').eq('restaurant_id', restaurant.id),
-            supabase.from('payments').select('amount').eq('restaurant_id', restaurant.id).eq('status', 'completed')
-          ]);
-
-          const orders = ordersResult.data || [];
-          const clients = clientsResult.data || [];
-          const payments = revenueResult.data || [];
-
-          const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-          const completedOrders = orders.filter(o => o.status === 'delivered').length;
-
-          statsMap.set(restaurant.id, {
-            totalOrders: orders.length,
-            completedOrders,
-            totalClients: clients.length,
-            totalRevenue,
-            averageTicket: completedOrders > 0 ? totalRevenue / completedOrders : 0
-          });
-        })
-      );
-
-      return statsMap;
-    },
-    enabled: !!restaurants
-  });
-
-  // Buscar tickets de implementação por restaurante
-  const { data: implementationTickets } = useQuery({
-    queryKey: ['implementation-tickets-by-restaurant'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('restaurant_id, status')
-        .eq('category', 'implementation');
-      
-      if (error) throw error;
-      
-      const ticketsByRestaurant = new Map();
-      data.forEach(ticket => {
-        if (!ticketsByRestaurant.has(ticket.restaurant_id)) {
-          ticketsByRestaurant.set(ticket.restaurant_id, []);
-        }
-        ticketsByRestaurant.get(ticket.restaurant_id).push(ticket);
-      });
-      
-      return ticketsByRestaurant;
-    }
-  });
-
-  const updateRestaurantMutation = useMutation({
-    mutationFn: async ({ restaurantId, status }: { restaurantId: string, status: RestaurantStatus }) => {
-      const { error } = await supabase
-        .from('restaurants')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', restaurantId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['master-restaurants'] });
-      queryClient.invalidateQueries({ queryKey: ['master-stats'] });
-      toast.success('Status do restaurante atualizado!');
-    }
-  });
-
-  const createImplementationTicketMutation = useMutation({
-    mutationFn: async (restaurantId: string) => {
-      const restaurant = restaurants?.find(r => r.id === restaurantId);
-      if (!restaurant) throw new Error('Restaurante não encontrado');
-
-      const { error } = await supabase
-        .from('tickets')
-        .insert({
-          restaurant_id: restaurantId,
-          user_id: userProfile?.id,
-          title: `Implementação - ${restaurant.name}`,
-          description: `Ticket de implementação criado para o restaurante ${restaurant.name}.\n\nPlano: ${restaurant.plan_type}\nEmail: ${restaurant.email}\nTelefone: ${restaurant.phone}\nStatus: ${restaurant.status}`,
-          category: 'implementation',
-          priority: 'high',
-          status: 'open'
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['implementation-tickets-by-restaurant'] });
-      toast.success('Ticket de implementação criado!');
-    }
-  });
+  const filteredRestaurants = restaurants?.filter(restaurant =>
+    restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    restaurant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    restaurant.cnpj.includes(searchTerm)
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-50 text-green-700 border-green-200';
-      case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'expired': return 'bg-red-50 text-red-700 border-red-200';
-      case 'blocked': return 'bg-gray-50 text-gray-700 border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'expired': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'blocked': return <XCircle className="h-4 w-4 text-gray-500" />;
-      default: return <AlertTriangle className="h-4 w-4 text-gray-500" />;
+      case 'active': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'expired': return 'bg-red-500';
+      case 'blocked': return 'bg-gray-500';
+      default: return 'bg-gray-500';
     }
   };
 
   const getPlanColor = (plan: string) => {
     switch (plan) {
-      case 'premium': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'professional': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'basic': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'basic': return 'bg-blue-500';
+      case 'premium': return 'bg-purple-500';
+      case 'enterprise': return 'bg-orange-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getImplementationStatus = (restaurantId: string) => {
-    const tickets = implementationTickets?.get(restaurantId) || [];
-    if (tickets.length === 0) return null;
-    
-    const hasOpen = tickets.some(t => t.status === 'open');
-    const hasInProgress = tickets.some(t => t.status === 'in_progress');
-    const hasResolved = tickets.some(t => t.status === 'resolved');
-    
-    if (hasInProgress) return { status: 'em_andamento', label: 'Em Andamento', color: 'bg-blue-100 text-blue-800' };
-    if (hasOpen) return { status: 'pendente', label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' };
-    if (hasResolved) return { status: 'concluida', label: 'Concluída', color: 'bg-green-100 text-green-800' };
-    
-    return null;
-  };
-
-  const handleNavigateToImplementation = (restaurantId: string) => {
-    if (onNavigateToTab) {
-      onNavigateToTab('implementation', restaurantId);
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Ativo';
+      case 'pending': return 'Pendente';
+      case 'expired': return 'Expirado';
+      case 'blocked': return 'Bloqueado';
+      default: return status;
     }
   };
 
-  const handleViewDetails = (restaurantId: string) => {
-    setShowDetails(restaurantId);
+  const getPlanText = (plan: string) => {
+    switch (plan) {
+      case 'basic': return 'Básico';
+      case 'premium': return 'Premium';
+      case 'enterprise': return 'Empresarial';
+      default: return plan;
+    }
   };
 
-  const handleBackFromDetails = () => {
-    setShowDetails(null);
-  };
-
-  const filteredRestaurants = restaurants?.filter(restaurant => {
-    const matchesSearch = searchTerm === '' || 
-      restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      restaurant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      restaurant.cnpj.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === 'all' || restaurant.status === statusFilter;
-    const matchesPlan = planFilter === 'all' || restaurant.plan_type === planFilter;
-    
-    return matchesSearch && matchesStatus && matchesPlan;
-  });
-
-  // Se estiver mostrando detalhes, renderizar componente de detalhes
-  if (showDetails) {
+  if (selectedRestaurant) {
     return (
-      <RestaurantDetailsView
-        restaurantId={showDetails}
-        onBack={handleBackFromDetails}
-        onNavigateToTab={onNavigateToTab || (() => {})}
+      <RestaurantDetailsView 
+        restaurantId={selectedRestaurant}
+        onBack={() => setSelectedRestaurant(null)}
+        onNavigateToTab={onNavigateToTab}
       />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar por nome, email ou CNPJ..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="expired">Expirado</SelectItem>
-                <SelectItem value="blocked">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Plano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os planos</SelectItem>
-                <SelectItem value="basic">Básico</SelectItem>
-                <SelectItem value="professional">Profissional</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Ativos</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {filteredRestaurants?.filter(r => r.status === 'active').length || 0}
-                </p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {filteredRestaurants?.filter(r => r.status === 'pending').length || 0}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Expirados</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {filteredRestaurants?.filter(r => r.status === 'expired').length || 0}
-                </p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {filteredRestaurants?.length || 0}
-                </p>
-              </div>
-              <Building2 className="h-8 w-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Restaurantes</h2>
+          <p className="text-gray-600">Gerencie todos os restaurantes do sistema</p>
+        </div>
       </div>
 
-      {/* Restaurants List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Restaurantes ({filteredRestaurants?.length || 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Carregando restaurantes...</div>
-          ) : (
-            <div className="space-y-4">
-              {filteredRestaurants?.map((restaurant) => {
-                const implementationStatus = getImplementationStatus(restaurant.id);
-                const isExpiringSoon = new Date(restaurant.plan_expires_at) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-                const stats = restaurantStats?.get(restaurant.id);
-                
-                return (
-                  <div key={restaurant.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-medium text-gray-900 text-lg">{restaurant.name}</h3>
-                          {getStatusIcon(restaurant.status)}
-                          <Badge className={getStatusColor(restaurant.status)}>
-                            {restaurant.status === 'active' ? 'Ativo' :
-                             restaurant.status === 'pending' ? 'Pendente' :
-                             restaurant.status === 'expired' ? 'Expirado' : 'Bloqueado'}
-                          </Badge>
-                          <Badge className={getPlanColor(restaurant.plan_type)}>
-                            {restaurant.plan_type.charAt(0).toUpperCase() + restaurant.plan_type.slice(1)}
-                          </Badge>
-                          {implementationStatus && (
-                            <Badge className={implementationStatus.color}>
-                              <Settings className="h-3 w-3 mr-1" />
-                              {implementationStatus.label}
-                            </Badge>
-                          )}
-                          {isExpiringSoon && restaurant.status === 'active' && (
-                            <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Expira em breve
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
-                          <span className="flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            {restaurant.email}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
-                            {restaurant.phone}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4" />
-                            CNPJ: {restaurant.cnpj}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            Expira: {new Date(restaurant.plan_expires_at).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          placeholder="Buscar por nome, e-mail ou CNPJ..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
 
-                        {/* Estatísticas rápidas */}
-                        {stats && (
-                          <div className="grid grid-cols-4 gap-4 p-3 bg-gray-50 rounded-lg mb-3">
-                            <div className="text-center">
-                              <div className="flex items-center justify-center gap-1 mb-1">
-                                <ShoppingCart className="h-3 w-3 text-blue-500" />
-                                <span className="text-xs text-gray-600">Pedidos</span>
-                              </div>
-                              <div className="font-semibold text-sm">{stats.totalOrders}</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="flex items-center justify-center gap-1 mb-1">
-                                <Users className="h-3 w-3 text-purple-500" />
-                                <span className="text-xs text-gray-600">Clientes</span>
-                              </div>
-                              <div className="font-semibold text-sm">{stats.totalClients}</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="flex items-center justify-center gap-1 mb-1">
-                                <TrendingUp className="h-3 w-3 text-green-500" />
-                                <span className="text-xs text-gray-600">Receita</span>
-                              </div>
-                              <div className="font-semibold text-sm">R$ {stats.totalRevenue.toFixed(0)}</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="flex items-center justify-center gap-1 mb-1">
-                                <BarChart3 className="h-3 w-3 text-orange-500" />
-                                <span className="text-xs text-gray-600">Ticket Médio</span>
-                              </div>
-                              <div className="font-semibold text-sm">R$ {stats.averageTicket.toFixed(0)}</div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {restaurant.address && (
-                          <div className="text-sm text-gray-600">
-                            <span className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              {restaurant.address}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col gap-2 ml-4">
-                        {/* Ações primárias */}
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleViewDetails(restaurant.id)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            Ver Detalhes
-                          </Button>
-                          
-                          {!implementationStatus && (
-                            <Button
-                              size="sm"
-                              onClick={() => createImplementationTicketMutation.mutate(restaurant.id)}
-                              disabled={createImplementationTicketMutation.isPending}
-                              className="bg-orange-600 hover:bg-orange-700"
-                            >
-                              <Zap className="h-3 w-3 mr-1" />
-                              Implementar
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Ações secundárias */}
-                        <div className="flex gap-2">
-                          {implementationStatus && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleNavigateToImplementation(restaurant.id)}
-                              className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                            >
-                              <Settings className="h-3 w-3 mr-1" />
-                              Implementação
-                            </Button>
-                          )}
-                          
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onNavigateToTab && onNavigateToTab('tickets')}
-                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                          >
-                            <Ticket className="h-3 w-3 mr-1" />
-                            Tickets
-                          </Button>
-                        </div>
-                        
-                        {/* Ações de Admin */}
-                        {userProfile?.role === 'admin' && (
-                          <div className="flex gap-2 pt-2 border-t">
-                            {restaurant.status !== 'active' && (
-                              <Button
-                                size="sm"
-                                onClick={() => updateRestaurantMutation.mutate({
-                                  restaurantId: restaurant.id,
-                                  status: 'active' as RestaurantStatus
-                                })}
-                                disabled={updateRestaurantMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Ativar
-                              </Button>
-                            )}
-                            {restaurant.status === 'active' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateRestaurantMutation.mutate({
-                                  restaurantId: restaurant.id,
-                                  status: 'blocked' as RestaurantStatus
-                                })}
-                                disabled={updateRestaurantMutation.isPending}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                              >
-                                <XCircle className="h-3 w-3 mr-1" />
-                                Bloquear
-                              </Button>
-                            )}
-                          </div>
-                        )}
+      {/* Restaurants Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="bg-gray-200 rounded-lg h-64"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredRestaurants?.map((restaurant) => (
+            <Card key={restaurant.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <Building2 className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg truncate">{restaurant.name}</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={`${getStatusColor(restaurant.status)} text-white text-xs`}>
+                          {getStatusText(restaurant.status)}
+                        </Badge>
+                        <Badge className={`${getPlanColor(restaurant.plan_type)} text-white text-xs`}>
+                          {getPlanText(restaurant.plan_type)}
+                        </Badge>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-              
-              {(!filteredRestaurants || filteredRestaurants.length === 0) && (
-                <div className="text-center py-8 text-gray-500">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>Nenhum restaurante encontrado</p>
-                  {(searchTerm || statusFilter !== 'all' || planFilter !== 'all') && (
-                    <p className="text-sm mt-2">Tente ajustar os filtros de busca</p>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{restaurant.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="h-4 w-4 flex-shrink-0" />
+                    <span>{restaurant.phone}</span>
+                  </div>
+                  {restaurant.address && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{restaurant.address}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span>Criado em {format(new Date(restaurant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span>
+                      Expira em {format(new Date(restaurant.plan_expires_at), 'dd/MM/yyyy', { locale: ptBR })}
+                    </span>
+                  </div>
+                  {restaurant.user_profiles && restaurant.user_profiles.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Users className="h-4 w-4 flex-shrink-0" />
+                      <span>Proprietário: {restaurant.user_profiles[0].name}</span>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                <div className="pt-3 border-t">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedRestaurant(restaurant.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Ver Detalhes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onNavigateToTab?.('implementation', restaurant.id)}
+                      className="flex items-center gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      Implementação
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {filteredRestaurants?.length === 0 && !isLoading && (
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum restaurante encontrado</h3>
+          <p className="text-gray-600">
+            {searchTerm ? 'Tente ajustar os filtros de busca.' : 'Não há restaurantes cadastrados no sistema.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
