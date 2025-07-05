@@ -18,7 +18,11 @@ export const useAdminContext = () => {
   return context;
 };
 
-export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+interface AdminContextProviderProps {
+  children: ReactNode;
+}
+
+export const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
   const { userProfile } = useAuth();
   
