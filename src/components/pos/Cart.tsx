@@ -5,12 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 
+interface SelectedAddon {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
   total: number;
+  addons?: SelectedAddon[];
+  notes?: string;
 }
 
 interface CartProps {
@@ -22,7 +31,13 @@ interface CartProps {
 
 export function Cart({ cart, onAddToCart, onRemoveFromCart, onClearCart }: CartProps) {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalValue = cart.reduce((sum, item) => sum + item.total, 0);
+  const totalValue = cart.reduce((sum, item) => {
+    const itemTotal = item.total;
+    const addonsTotal = item.addons?.reduce((addonSum, addon) => 
+      addonSum + (addon.price * addon.quantity), 0
+    ) || 0;
+    return sum + itemTotal + (addonsTotal * item.quantity);
+  }, 0);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
@@ -75,10 +90,32 @@ export function Cart({ cart, onAddToCart, onRemoveFromCart, onClearCart }: CartP
                       <p className="text-xs text-gray-500 mt-1">
                         R$ {item.price.toFixed(2)} cada
                       </p>
+
+                      {/* Adicionais */}
+                      {item.addons && item.addons.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs font-medium text-gray-600">Adicionais:</p>
+                          {item.addons.map(addon => (
+                            <div key={addon.id} className="text-xs text-gray-500 flex justify-between">
+                              <span>+ {addon.name} ({addon.quantity}x)</span>
+                              <span>R$ {(addon.price * addon.quantity).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Observações */}
+                      {item.notes && (
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-gray-600">Obs:</p>
+                          <p className="text-xs text-gray-500">{item.notes}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right ml-2">
                       <div className="font-bold text-green-600 text-sm">
-                        R$ {item.total.toFixed(2)}
+                        R$ {(item.total + (item.addons?.reduce((sum, addon) => 
+                          sum + (addon.price * addon.quantity), 0) || 0) * item.quantity).toFixed(2)}
                       </div>
                     </div>
                   </div>

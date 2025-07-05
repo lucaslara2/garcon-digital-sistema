@@ -2,113 +2,119 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Store, ShoppingCart, Plus, Clock, ChefHat, FileText, TrendingUp } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  Clock, 
+  CheckCircle, 
+  Receipt,
+  Users,
+  MessageSquare
+} from 'lucide-react';
 
 interface POSHeaderProps {
   userProfile: any;
-  activeView: 'new-order' | 'pending' | 'preparing' | 'tickets';
-  onViewChange: (view: 'new-order' | 'pending' | 'preparing' | 'tickets') => void;
+  activeView: string;
+  onViewChange: (view: string) => void;
   totalItems: number;
   totalValue: number;
+  onOpenClientManager?: () => void;
+  onOpenWhatsAppManager?: () => void;
 }
 
-export function POSHeader({ userProfile, activeView, onViewChange, totalItems, totalValue }: POSHeaderProps) {
-  const menuItems = [
-    {
-      id: 'new-order',
-      label: 'Novo Pedido',
-      icon: Plus,
-      count: totalItems > 0 ? totalItems : undefined,
-    },
-    {
-      id: 'pending',
-      label: 'Pendentes',
-      icon: Clock,
-    },
-    {
-      id: 'preparing',
-      label: 'Em Preparo',
-      icon: ChefHat,
-    },
-    {
-      id: 'tickets',
-      label: 'Comandas',
-      icon: FileText,
-    }
-  ];
-
+export function POSHeader({ 
+  userProfile, 
+  activeView, 
+  onViewChange, 
+  totalItems, 
+  totalValue,
+  onOpenClientManager,
+  onOpenWhatsAppManager
+}: POSHeaderProps) {
   return (
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3">
+    <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* Brand Section */}
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Store className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
-                Sistema PDV
-              </h1>
-              <div className="text-xs text-gray-500 flex items-center">
-                <span>{userProfile.name}</span>
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full ml-2"></div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Navigation Menu */}
-          <div className="flex items-center space-x-1">
-            {menuItems.map((item) => {
-              const isActive = activeView === item.id;
-              const Icon = item.icon;
-              
-              return (
-                <Button
-                  key={item.id}
-                  variant={isActive ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => onViewChange(item.id as any)}
-                  className="relative px-3 py-2 text-sm rounded-md transition-colors h-9"
-                >
-                  <Icon className="h-4 w-4 mr-1.5" />
-                  {item.label}
-                  
-                  {item.count && (
-                    <Badge className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full h-5">
-                      {item.count}
-                    </Badge>
-                  )}
-                </Button>
-              );
-            })}
+          {/* Logo e Info */}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Sistema POS</h1>
+            <p className="text-gray-600">{userProfile?.name}</p>
           </div>
 
-          {/* Cart Summary */}
-          <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-100 p-1.5 rounded">
-                  <ShoppingCart className="h-3 w-3 text-blue-600" />
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-900 font-semibold text-sm">{totalItems}</div>
-                  <div className="text-xs text-gray-500">itens</div>
-                </div>
+          {/* Navegação */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={activeView === 'new-order' ? 'default' : 'outline'}
+              onClick={() => onViewChange('new-order')}
+              size="sm"
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Novo Pedido
+              {totalItems > 0 && (
+                <Badge className="ml-2 bg-red-500 text-white">
+                  {totalItems}
+                </Badge>
+              )}
+            </Button>
+            
+            <Button
+              variant={activeView === 'pending' ? 'default' : 'outline'}
+              onClick={() => onViewChange('pending')}
+              size="sm"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Pendentes
+            </Button>
+            
+            <Button
+              variant={activeView === 'preparing' ? 'default' : 'outline'}
+              onClick={() => onViewChange('preparing')}
+              size="sm"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              Preparando
+            </Button>
+            
+            <Button
+              variant={activeView === 'tickets' ? 'default' : 'outline'}
+              onClick={() => onViewChange('tickets')}
+              size="sm"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Prontos
+            </Button>
+          </div>
+
+          {/* Ações */}
+          <div className="flex items-center space-x-2">
+            {onOpenClientManager && (
+              <Button
+                variant="outline"
+                onClick={onOpenClientManager}
+                size="sm"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Clientes
+              </Button>
+            )}
+            
+            {onOpenWhatsAppManager && (
+              <Button
+                variant="outline"
+                onClick={onOpenWhatsAppManager}
+                size="sm"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                WhatsApp
+              </Button>
+            )}
+            
+            {totalValue > 0 && activeView === 'new-order' && (
+              <div className="bg-green-100 px-3 py-2 rounded-lg">
+                <span className="text-sm font-medium text-green-800">
+                  Total: R$ {totalValue.toFixed(2)}
+                </span>
               </div>
-              
-              <div className="w-px h-6 bg-gray-300"></div>
-              
-              <div className="flex items-center space-x-2">
-                <div className="bg-green-100 p-1.5 rounded">
-                  <TrendingUp className="h-3 w-3 text-green-600" />
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-900 font-semibold text-sm">R$ {totalValue.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">total</div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

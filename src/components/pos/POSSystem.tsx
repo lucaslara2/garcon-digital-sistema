@@ -8,9 +8,18 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { POSHeader } from './components/POSHeader';
 import { NewOrderView } from './components/NewOrderView';
 import { OrdersView } from './components/OrdersView';
+import { ClientManager } from './components/ClientManager';
+import { WhatsAppManager } from './components/WhatsAppManager';
 import type { Database } from '@/integrations/supabase/types';
 
 type PaymentMethod = Database['public']['Enums']['payment_method'];
+
+interface SelectedAddon {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
 
 interface CartItem {
   id: string;
@@ -18,6 +27,8 @@ interface CartItem {
   price: number;
   quantity: number;
   total: number;
+  addons?: SelectedAddon[];
+  notes?: string;
 }
 
 const POSSystem = () => {
@@ -30,8 +41,10 @@ const POSSystem = () => {
   const [amountPaid, setAmountPaid] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [activeView, setActiveView] = useState<'new-order' | 'pending' | 'preparing' | 'tickets'>('new-order');
+  const [showClientManager, setShowClientManager] = useState(false);
+  const [showWhatsAppManager, setShowWhatsAppManager] = useState(false);
 
-  // Fetch products for POS
+  // Fetch products for POS with addons
   const { data: products } = useQuery({
     queryKey: ['pos-products', userProfile?.restaurant_id],
     queryFn: async () => {
@@ -39,7 +52,8 @@ const POSSystem = () => {
         .from('products')
         .select(`
           *,
-          category:product_categories(name)
+          category:product_categories(name),
+          product_addons(*)
         `)
         .eq('restaurant_id', userProfile?.restaurant_id)
         .eq('is_active', true)
@@ -68,7 +82,7 @@ const POSSystem = () => {
     enabled: !!userProfile?.restaurant_id
   });
 
-  // Process order
+  // Process order with addons
   const processOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
       // Create order
@@ -88,20 +102,40 @@ const POSSystem = () => {
 
       if (orderError) throw orderError;
 
-      // Create order items
-      const orderItems = cart.map(item => ({
-        order_id: order.id,
-        product_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.total
-      }));
+      // Create order items and addons
+      for (const item of cart) {
+        const { data: orderItem, error: itemsError } = await supabase
+          .from('order_items')
+          .insert({
+            order_id: order.id,
+            product_id: item.id,
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.total,
+            notes: item.notes
+          })
+          .select()
+          .single();
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+        if (itemsError) throw itemsError;
 
-      if (itemsError) throw itemsError;
+        // Create order item addons
+        if (item.addons && item.addons.length > 0) {
+          const addonInserts = item.addons.map(addon => ({
+            order_item_id: orderItem.id,
+            addon_id: addon.id,
+            quantity: addon.quantity,
+            unit_price: addon.price,
+            total_price: addon.price * addon.quantity
+          }));
+
+          const { error: addonsError } = await supabase
+            .from('order_item_addons')
+            .insert(addonInserts);
+
+          if (addonsError) throw addonsError;
+        }
+      }
 
       // Create payment record
       const { error: paymentError } = await supabase
@@ -138,26 +172,36 @@ const POSSystem = () => {
     }
   });
 
-  const addToCart = (product: any) => {
+  const addToCart = (product: any, addons: SelectedAddon[] = [], notes: string = '', quantity: number = 1) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
+      const existingItem = prevCart.find(item => 
+        item.id === product.id && 
+        JSON.stringify(item.addons) === JSON.stringify(addons) &&
+        item.notes === notes
+      );
+
       if (existingItem) {
         return prevCart.map(item =>
-          item.id === product.id
+          item.id === product.id && 
+          JSON.stringify(item.addons) === JSON.stringify(addons) &&
+          item.notes === notes
             ? { 
                 ...item, 
-                quantity: item.quantity + 1,
-                total: (item.quantity + 1) * item.price
+                quantity: item.quantity + quantity,
+                total: (item.quantity + quantity) * item.price
               }
             : item
         );
       }
+
       return [...prevCart, {
         id: product.id,
         name: product.name,
         price: product.price,
-        quantity: 1,
-        total: product.price
+        quantity,
+        total: product.price * quantity,
+        addons,
+        notes
       }];
     });
   };
@@ -188,7 +232,13 @@ const POSSystem = () => {
   };
 
   const getSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.total, 0);
+    return cart.reduce((sum, item) => {
+      const itemTotal = item.total;
+      const addonsTotal = item.addons?.reduce((addonSum, addon) => 
+        addonSum + (addon.price * addon.quantity), 0
+      ) || 0;
+      return sum + itemTotal + (addonsTotal * item.quantity);
+    }, 0);
   };
 
   const getTotal = () => {
@@ -235,6 +285,8 @@ const POSSystem = () => {
         onViewChange={setActiveView}
         totalItems={totalItems}
         totalValue={getTotal()}
+        onOpenClientManager={() => setShowClientManager(true)}
+        onOpenWhatsAppManager={() => setShowWhatsAppManager(true)}
       />
 
       {/* Main Content */}
@@ -281,6 +333,17 @@ const POSSystem = () => {
           />
         )}
       </div>
+
+      {/* Modals */}
+      <ClientManager
+        isOpen={showClientManager}
+        onClose={() => setShowClientManager(false)}
+      />
+
+      <WhatsAppManager
+        isOpen={showWhatsAppManager}
+        onClose={() => setShowWhatsAppManager(false)}
+      />
     </div>
   );
 };
