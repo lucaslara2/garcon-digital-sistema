@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,101 +11,28 @@ import {
   TrendingDown, 
   TrendingUp, 
   AlertTriangle,
-  Edit,
   Plus,
   Minus
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { useInventory, useAdjustStock } from '@/hooks/useInventory';
 
 const InventoryGrid = () => {
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
+  const { data: inventory = [], isLoading } = useInventory();
+  const adjustStockMutation = useAdjustStock();
+  
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [adjustmentDialog, setAdjustmentDialog] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<'in' | 'out'>('in');
   const [adjustmentQuantity, setAdjustmentQuantity] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
 
-  const { data: inventory = [] } = useQuery({
-    queryKey: ['inventory', userProfile?.restaurant_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('inventory')
-        .select(`
-          *,
-          products(name, price, image_url)
-        `)
-        .eq('restaurant_id', userProfile?.restaurant_id)
-        .order('last_updated', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userProfile?.restaurant_id
-  });
-
-  const adjustStockMutation = useMutation({
-    mutationFn: async ({ 
-      inventoryId, 
-      newStock, 
-      movementType, 
-      quantity, 
-      reason 
-    }: {
-      inventoryId: string;
-      newStock: number;
-      movementType: 'in' | 'out';
-      quantity: number;
-      reason: string;
-    }) => {
-      // Atualizar estoque
-      const { error: updateError } = await supabase
-        .from('inventory')
-        .update({ 
-          current_stock: newStock,
-          last_updated: new Date().toISOString()
-        })
-        .eq('id', inventoryId);
-      
-      if (updateError) throw updateError;
-
-      // Registrar movimentação
-      const { error: movementError } = await supabase
-        .from('stock_movements')
-        .insert({
-          inventory_id: inventoryId,
-          movement_type: movementType,
-          quantity: movementType === 'in' ? quantity : -quantity,
-          reason,
-          user_id: userProfile?.id
-        });
-      
-      if (movementError) throw movementError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      setAdjustmentDialog(false);
-      setAdjustmentQuantity('');
-      setAdjustmentReason('');
-      toast.success('Estoque ajustado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error('Erro ao ajustar estoque: ' + error.message);
-    }
-  });
-
   const handleStockAdjustment = () => {
     if (!selectedProduct || !adjustmentQuantity || !adjustmentReason) {
-      toast.error('Preencha todos os campos');
       return;
     }
 
     const quantity = parseInt(adjustmentQuantity);
     if (quantity <= 0) {
-      toast.error('Quantidade deve ser maior que zero');
       return;
     }
 
@@ -121,6 +48,10 @@ const InventoryGrid = () => {
       quantity,
       reason: adjustmentReason
     });
+
+    setAdjustmentDialog(false);
+    setAdjustmentQuantity('');
+    setAdjustmentReason('');
   };
 
   const openAdjustmentDialog = (product: any, type: 'in' | 'out') => {
@@ -134,6 +65,15 @@ const InventoryGrid = () => {
     if (current >= max * 0.8) return { status: 'high', color: 'blue', text: 'Alto' };
     return { status: 'normal', color: 'green', text: 'Normal' };
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h4 className="text-xl font-medium text-gray-700 mb-2">Carregando estoque...</h4>
+      </div>
+    );
+  }
 
   if (inventory.length === 0) {
     return (

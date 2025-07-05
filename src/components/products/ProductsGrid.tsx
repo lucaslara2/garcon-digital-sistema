@@ -11,10 +11,7 @@ import {
   Package,
   Eye
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
 
 interface ProductsGridProps {
   selectedCategory: string;
@@ -22,53 +19,8 @@ interface ProductsGridProps {
 }
 
 const ProductsGrid = ({ selectedCategory, onEditProduct }: ProductsGridProps) => {
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data: products = [] } = useQuery({
-    queryKey: ['products', userProfile?.restaurant_id, selectedCategory],
-    queryFn: async () => {
-      let query = supabase
-        .from('products')
-        .select(`
-          *,
-          category:product_categories(name),
-          inventory(current_stock, min_stock, max_stock),
-          product_observation_assignments(
-            product_observations(name, description)
-          )
-        `)
-        .eq('restaurant_id', userProfile?.restaurant_id);
-
-      if (selectedCategory) {
-        query = query.eq('category_id', selectedCategory);
-      }
-
-      const { data, error } = await query.order('name');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userProfile?.restaurant_id
-  });
-
-  const deleteProductMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success('Produto excluído com sucesso!');
-    },
-    onError: (error) => {
-      toast.error('Erro ao excluir produto: ' + error.message);
-    }
-  });
+  const { data: products = [], isLoading } = useProducts(selectedCategory);
+  const deleteProductMutation = useDeleteProduct();
 
   const calculateProfit = (salePrice: number, costPrice: number) => {
     if (!costPrice || costPrice === 0) return { amount: 0, percentage: 0 };
@@ -76,6 +28,15 @@ const ProductsGrid = ({ selectedCategory, onEditProduct }: ProductsGridProps) =>
     const percentage = (profit / costPrice) * 100;
     return { amount: profit, percentage };
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h4 className="text-xl font-medium text-gray-700 mb-2">Carregando produtos...</h4>
+      </div>
+    );
+  }
 
   if (products.length === 0) {
     return (

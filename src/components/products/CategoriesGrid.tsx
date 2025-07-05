@@ -4,54 +4,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Tag, Package } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { useCategories, useDeleteCategory } from '@/hooks/useCategories';
 
 interface CategoriesGridProps {
   onEditCategory: (category: any) => void;
 }
 
 const CategoriesGrid = ({ onEditCategory }: CategoriesGridProps) => {
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
+  const { data: categories = [], isLoading } = useCategories();
+  const deleteCategoryMutation = useDeleteCategory();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories', userProfile?.restaurant_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_categories')
-        .select(`
-          *,
-          products(count)
-        `)
-        .eq('restaurant_id', userProfile?.restaurant_id)
-        .order('display_order');
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userProfile?.restaurant_id
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (categoryId: string) => {
-      const { error } = await supabase
-        .from('product_categories')
-        .delete()
-        .eq('id', categoryId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria excluída com sucesso!');
-    },
-    onError: (error) => {
-      toast.error('Erro ao excluir categoria: ' + error.message);
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <Tag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h4 className="text-xl font-medium text-gray-700 mb-2">Carregando categorias...</h4>
+      </div>
+    );
+  }
 
   if (categories.length === 0) {
     return (
