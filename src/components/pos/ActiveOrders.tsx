@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, ChefHat, Eye, CheckCircle } from 'lucide-react';
+import { Clock, ChefHat, Eye, CheckCircle, Timer, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -104,132 +104,160 @@ export function ActiveOrders({ onOrderSelect, selectedOrderId }: ActiveOrdersPro
   const pendingOrders = activeOrders?.filter(order => order.status === 'pending') || [];
   const preparingOrders = activeOrders?.filter(order => order.status === 'preparing') || [];
 
+  const formatTimeAgo = (dateString: string) => {
+    const diff = Date.now() - new Date(dateString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Agora';
+    if (minutes === 1) return '1 min';
+    return `${minutes} min`;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col space-y-4">
       {/* Pedidos Pendentes */}
-      <GradientCard 
-        title="Pedidos Pendentes" 
-        icon={<Clock className="h-5 w-5" />}
-        gradient="warning"
-        className="animate-fade-in"
-      >
-        {pendingOrders.length === 0 ? (
-          <div className="text-center py-6 text-slate-400">
-            <Clock className="h-12 w-12 mx-auto mb-3 text-slate-600" />
-            <p>Nenhum pedido pendente</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {pendingOrders.map((order) => (
-              <div
-                key={order.id}
-                className={`p-4 bg-slate-700/50 rounded-lg border transition-all cursor-pointer ${
-                  selectedOrderId === order.id 
-                    ? 'border-amber-500 bg-slate-700' 
-                    : 'border-slate-600 hover:border-slate-500'
-                }`}
-                onClick={() => onOrderSelect(order)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Badge className={`${getStatusColor(order.status)} text-white`}>
-                      {getStatusText(order.status)}
-                    </Badge>
-                    <span className="text-white font-medium">
-                      Pedido #{order.id.slice(-8)}
-                    </span>
-                  </div>
-                  <div className="flex space-x-2">
+      <div className="flex-1">
+        <GradientCard 
+          title={`Pendentes (${pendingOrders.length})`}
+          icon={<Clock className="h-5 w-5" />}
+          gradient="warning"
+          className="h-full flex flex-col"
+        >
+          {pendingOrders.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+              <div className="bg-slate-700/50 p-4 rounded-full mb-3">
+                <Clock className="h-8 w-8 text-slate-500" />
+              </div>
+              <p className="text-sm">Nenhum pedido pendente</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {pendingOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className={`p-3 rounded-lg border transition-all cursor-pointer hover:scale-[1.02] ${
+                    selectedOrderId === order.id 
+                      ? 'border-amber-500 bg-gradient-to-r from-amber-900/30 to-orange-900/30' 
+                      : 'border-slate-600/50 bg-gradient-to-r from-slate-800/50 to-slate-700/50 hover:border-amber-500/50'
+                  }`}
+                  onClick={() => onOrderSelect(order)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                        <Timer className="h-3 w-3 mr-1" />
+                        {formatTimeAgo(order.created_at)}
+                      </Badge>
+                      <span className="text-white font-medium text-sm">
+                        #{order.id.slice(-6)}
+                      </span>
+                    </div>
                     <Button
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateOrderStatus(order.id, 'preparing');
                       }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-blue-600/80 hover:bg-blue-600 text-white text-xs h-7 px-2"
                     >
-                      <ChefHat className="h-4 w-4 mr-1" />
+                      <ChefHat className="h-3 w-3 mr-1" />
                       Aceitar
                     </Button>
                   </div>
+                  <div className="space-y-1 text-xs text-slate-300">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-medium">{order.customer_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>
+                          {order.restaurant_tables?.table_number 
+                            ? `Mesa ${order.restaurant_tables.table_number}`
+                            : 'Balcão'
+                          }
+                        </span>
+                      </div>
+                      <span className="font-bold text-amber-400">R$ {order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-slate-300">
-                  <p><strong>Cliente:</strong> {order.customer_name}</p>
-                  <p><strong>Mesa:</strong> {
-                    order.restaurant_tables?.table_number 
-                      ? `Mesa ${order.restaurant_tables.table_number}`
-                      : 'Balcão'
-                  }</p>
-                  <p><strong>Total:</strong> R$ {order.total.toFixed(2)}</p>
-                  <p><strong>Horário:</strong> {new Date(order.created_at).toLocaleTimeString()}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </GradientCard>
+              ))}
+            </div>
+          )}
+        </GradientCard>
+      </div>
 
       {/* Pedidos em Preparo */}
-      <GradientCard 
-        title="Pedidos em Preparo" 
-        icon={<ChefHat className="h-5 w-5" />}
-        className="animate-fade-in"
-      >
-        {preparingOrders.length === 0 ? (
-          <div className="text-center py-6 text-slate-400">
-            <ChefHat className="h-12 w-12 mx-auto mb-3 text-slate-600" />
-            <p>Nenhum pedido em preparo</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {preparingOrders.map((order) => (
-              <div
-                key={order.id}
-                className={`p-4 bg-slate-700/50 rounded-lg border transition-all cursor-pointer ${
-                  selectedOrderId === order.id 
-                    ? 'border-amber-500 bg-slate-700' 
-                    : 'border-slate-600 hover:border-slate-500'
-                }`}
-                onClick={() => onOrderSelect(order)}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Badge className={`${getStatusColor(order.status)} text-white`}>
-                      {getStatusText(order.status)}
-                    </Badge>
-                    <span className="text-white font-medium">
-                      Pedido #{order.id.slice(-8)}
-                    </span>
-                  </div>
-                  <div className="flex space-x-2">
+      <div className="flex-1">
+        <GradientCard 
+          title={`Em Preparo (${preparingOrders.length})`}
+          icon={<ChefHat className="h-5 w-5" />}
+          className="h-full flex flex-col"
+        >
+          {preparingOrders.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+              <div className="bg-slate-700/50 p-4 rounded-full mb-3">
+                <ChefHat className="h-8 w-8 text-slate-500" />
+              </div>
+              <p className="text-sm">Nenhum pedido em preparo</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {preparingOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className={`p-3 rounded-lg border transition-all cursor-pointer hover:scale-[1.02] ${
+                    selectedOrderId === order.id 
+                      ? 'border-amber-500 bg-gradient-to-r from-amber-900/30 to-orange-900/30' 
+                      : 'border-slate-600/50 bg-gradient-to-r from-slate-800/50 to-slate-700/50 hover:border-amber-500/50'
+                  }`}
+                  onClick={() => onOrderSelect(order)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                        <ChefHat className="h-3 w-3 mr-1" />
+                        {formatTimeAgo(order.created_at)}
+                      </Badge>
+                      <span className="text-white font-medium text-sm">
+                        #{order.id.slice(-6)}
+                      </span>
+                    </div>
                     <Button
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         updateOrderStatus(order.id, 'ready');
                       }}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600/80 hover:bg-green-600 text-white text-xs h-7 px-2"
                     >
-                      <CheckCircle className="h-4 w-4 mr-1" />
+                      <CheckCircle className="h-3 w-3 mr-1" />
                       Pronto
                     </Button>
                   </div>
+                  <div className="space-y-1 text-xs text-slate-300">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-medium">{order.customer_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>
+                          {order.restaurant_tables?.table_number 
+                            ? `Mesa ${order.restaurant_tables.table_number}`
+                            : 'Balcão'
+                          }
+                        </span>
+                      </div>
+                      <span className="font-bold text-amber-400">R$ {order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-slate-300">
-                  <p><strong>Cliente:</strong> {order.customer_name}</p>
-                  <p><strong>Mesa:</strong> {
-                    order.restaurant_tables?.table_number 
-                      ? `Mesa ${order.restaurant_tables.table_number}`
-                      : 'Balcão'
-                  }</p>
-                  <p><strong>Total:</strong> R$ {order.total.toFixed(2)}</p>
-                  <p><strong>Horário:</strong> {new Date(order.created_at).toLocaleTimeString()}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </GradientCard>
+              ))}
+            </div>
+          )}
+        </GradientCard>
+      </div>
     </div>
   );
 }

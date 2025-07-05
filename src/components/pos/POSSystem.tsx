@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +12,7 @@ import { Cart } from './Cart';
 import { PaymentSection } from './PaymentSection';
 import { ActiveOrders } from './ActiveOrders';
 import { OrderTicket } from './OrderTicket';
-import { Calculator } from 'lucide-react';
+import { Calculator, Store } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PaymentMethod = Database['public']['Enums']['payment_method'];
@@ -229,23 +230,39 @@ const POSSystem = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
-      <div className="max-w-7xl mx-auto">
-        <PageHeader
-          title="Sistema PDV"
-          description="Ponto de Venda - Processamento de Pedidos"
-          icon={<Calculator className="h-8 w-8" />}
-          className="mb-8"
-        />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+      {/* Header mais limpo */}
+      <div className="bg-slate-900/50 backdrop-blur border-b border-slate-700/50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-2 rounded-lg">
+              <Store className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Sistema PDV</h1>
+              <p className="text-slate-400 text-sm">Ponto de Venda - {userProfile.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <p className="text-sm text-slate-400">Total do Carrinho</p>
+              <p className="text-xl font-bold text-amber-400">R$ {getTotal().toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Nova Venda - Products Section */}
-          <div className="xl:col-span-1">
+      {/* Layout Principal */}
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+          
+          {/* Coluna 1: Produtos (4 colunas) */}
+          <div className="col-span-4 space-y-4">
             <ProductGrid products={products} onAddToCart={addToCart} />
           </div>
 
-          {/* Cart e Payment Section */}
-          <div className="xl:col-span-1 space-y-6">
+          {/* Coluna 2: Carrinho e Processamento (3 colunas) */}
+          <div className="col-span-3 space-y-4 flex flex-col">
             <OrderDetails
               selectedTable={selectedTable}
               setSelectedTable={setSelectedTable}
@@ -254,12 +271,14 @@ const POSSystem = () => {
               tables={tables}
             />
 
-            <Cart
-              cart={cart}
-              onAddToCart={addToCart}
-              onRemoveFromCart={removeFromCart}
-              onClearCart={clearCart}
-            />
+            <div className="flex-1">
+              <Cart
+                cart={cart}
+                onAddToCart={addToCart}
+                onRemoveFromCart={removeFromCart}
+                onClearCart={clearCart}
+              />
+            </div>
 
             {cart.length > 0 && (
               <PaymentSection
@@ -276,16 +295,16 @@ const POSSystem = () => {
             )}
           </div>
 
-          {/* Pedidos Ativos */}
-          <div className="xl:col-span-1">
+          {/* Coluna 3: Pedidos Ativos (2.5 colunas) */}
+          <div className="col-span-2.5">
             <ActiveOrders 
               onOrderSelect={setSelectedOrder}
               selectedOrderId={selectedOrder?.id || null}
             />
           </div>
 
-          {/* Comanda do Pedido */}
-          <div className="xl:col-span-1">
+          {/* Coluna 4: Comanda (2.5 colunas) */}
+          <div className="col-span-2.5">
             <OrderTicket order={selectedOrder} />
           </div>
         </div>
