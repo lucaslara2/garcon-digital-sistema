@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -49,17 +49,17 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/pos" element={
-                <ProtectedRoute roles={['cashier', 'restaurant_owner', 'admin']}>
+                <ProtectedRoute allowedRoles={['cashier', 'restaurant_owner', 'admin']}>
                   <POSPage />
                 </ProtectedRoute>
               } />
               <Route path="/kitchen" element={
-                <ProtectedRoute roles={['kitchen', 'restaurant_owner', 'admin']}>
+                <ProtectedRoute allowedRoles={['kitchen', 'restaurant_owner', 'admin']}>
                   <KitchenPage />
                 </ProtectedRoute>
               } />
               <Route path="/management" element={
-                <ProtectedRoute roles={['restaurant_owner', 'admin']}>
+                <ProtectedRoute allowedRoles={['restaurant_owner', 'admin']}>
                   <RestaurantManagement />
                 </ProtectedRoute>
               } />
@@ -74,7 +74,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/reports" element={
-                <ProtectedRoute roles={['restaurant_owner', 'admin']}>
+                <ProtectedRoute allowedRoles={['restaurant_owner', 'admin']}>
                   <ReportsView />
                 </ProtectedRoute>
               } />
