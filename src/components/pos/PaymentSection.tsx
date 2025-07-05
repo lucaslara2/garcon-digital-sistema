@@ -32,33 +32,33 @@ export function PaymentSection({
   isProcessing
 }: PaymentSectionProps) {
   return (
-    <div className="bg-slate-900 rounded-lg border border-slate-800">
-      <div className="p-4 border-b border-slate-800">
-        <h2 className="text-lg font-semibold text-white flex items-center">
-          <Receipt className="h-5 w-5 mr-2 text-amber-400" />
+    <div className="card-gradient rounded-xl border modern-shadow">
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-semibold text-foreground flex items-center">
+          <Receipt className="h-5 w-5 mr-2 text-primary" />
           Finalizar Pagamento
         </h2>
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Resumo */}
-        <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+        {/* Total */}
+        <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
           <div className="flex justify-between items-center">
-            <span className="text-slate-300">Total a Pagar:</span>
-            <span className="text-xl font-bold text-amber-400">R$ {total.toFixed(2)}</span>
+            <span className="text-foreground font-medium">Total a Pagar:</span>
+            <span className="text-xl font-bold text-primary">R$ {total.toFixed(2)}</span>
           </div>
         </div>
 
-        {/* Métodos de Pagamento */}
+        {/* Payment Methods */}
         <div>
-          <Label className="text-slate-300 text-sm font-medium mb-3 block">
+          <Label className="text-foreground text-sm font-medium mb-3 block">
             Método de Pagamento
           </Label>
           <div className="space-y-2">
             <Button
               variant={paymentMethod === 'cash' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('cash')}
-              className={paymentMethod === 'cash' ? 'bg-amber-600 hover:bg-amber-700 w-full' : 'border-slate-700 text-slate-300 hover:bg-slate-800 w-full'}
+              className={`w-full justify-start ${paymentMethod === 'cash' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
             >
               <Banknote className="h-4 w-4 mr-2" />
               Dinheiro
@@ -68,7 +68,7 @@ export function PaymentSection({
             <Button
               variant={paymentMethod === 'credit_card' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('credit_card')}
-              className={paymentMethod === 'credit_card' ? 'bg-amber-600 hover:bg-amber-700 w-full' : 'border-slate-700 text-slate-300 hover:bg-slate-800 w-full'}
+              className={`w-full justify-start ${paymentMethod === 'credit_card' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Cartão de Crédito
@@ -78,7 +78,7 @@ export function PaymentSection({
             <Button
               variant={paymentMethod === 'pix' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('pix')}
-              className={paymentMethod === 'pix' ? 'bg-amber-600 hover:bg-amber-700 w-full' : 'border-slate-700 text-slate-300 hover:bg-slate-800 w-full'}
+              className={`w-full justify-start ${paymentMethod === 'pix' ? 'bg-primary hover:bg-primary/90' : 'hover:bg-muted'}`}
             >
               <Smartphone className="h-4 w-4 mr-2" />
               PIX
@@ -87,40 +87,40 @@ export function PaymentSection({
           </div>
         </div>
 
-        {/* Campos para Dinheiro */}
+        {/* Cash Payment Fields */}
         {paymentMethod === 'cash' && (
           <div className="space-y-3">
             <div>
-              <Label className="text-slate-300 text-sm font-medium mb-2 block">
+              <Label className="text-foreground text-sm font-medium mb-2 block">
                 Valor Recebido
               </Label>
               <div className="relative">
-                <DollarSign className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <DollarSign className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="number"
                   step="0.01"
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
                   placeholder="0,00"
-                  className="pl-10 bg-slate-800 border-slate-700 text-white"
+                  className="pl-10 bg-background border-border focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
             
             {amountPaid && parseFloat(amountPaid) >= total && (
-              <div className="bg-green-900/30 rounded-lg p-3 border border-green-500/30">
+              <div className="success-gradient rounded-lg p-3 border border-emerald-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Troco:</span>
-                  <span className="text-lg font-bold text-green-400">R$ {change.toFixed(2)}</span>
+                  <span className="text-white font-medium">Troco:</span>
+                  <span className="text-lg font-bold text-white">R$ {change.toFixed(2)}</span>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* Botão Finalizar */}
+        {/* Process Order Button */}
         <Button
-          className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold h-11"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-11 modern-shadow"
           onClick={onProcessOrder}
           disabled={isProcessing}
         >

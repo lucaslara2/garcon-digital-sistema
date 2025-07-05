@@ -218,7 +218,7 @@ const POSSystem = () => {
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen modern-gradient flex items-center justify-center">
         <LoadingSpinner size="lg" text="Carregando sistema..." />
       </div>
     );
@@ -227,7 +227,7 @@ const POSSystem = () => {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen modern-gradient">
       <POSHeader
         userProfile={userProfile}
         activeView={activeView}
@@ -236,7 +236,7 @@ const POSSystem = () => {
         totalValue={getTotal()}
       />
 
-      {/* Enhanced Main Content */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         {activeView === 'new-order' && (
           <NewOrderView
