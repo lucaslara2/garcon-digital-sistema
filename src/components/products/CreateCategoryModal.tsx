@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -20,40 +21,13 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
 
   const createCategoryMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      // Para usuários admin que não têm restaurant_id, vamos usar um restaurante padrão
-      // ou permitir que eles selecionem um restaurante
-      let restaurantId = userProfile?.restaurant_id;
-      
-      // Se é admin e não tem restaurant_id, usar o primeiro restaurante disponível
-      if (userProfile?.role === 'admin' && !restaurantId) {
-        console.log('Admin user without restaurant_id, fetching available restaurants...');
-        const { data: restaurants, error: restaurantError } = await supabase
-          .from('restaurants')
-          .select('id')
-          .limit(1);
-        
-        if (restaurantError) {
-          console.error('Error fetching restaurants:', restaurantError);
-          throw new Error('Erro ao buscar restaurantes disponíveis');
-        }
-        
-        if (restaurants && restaurants.length > 0) {
-          restaurantId = restaurants[0].id;
-          console.log('Using restaurant_id:', restaurantId);
-        } else {
-          throw new Error('Nenhum restaurante encontrado para criar a categoria');
-        }
-      }
-
       const categoryData = {
         name: formData.get('name') as string,
         description: formData.get('description') as string,
         display_order: parseInt(formData.get('display_order') as string) || 0,
-        restaurant_id: restaurantId,
+        restaurant_id: userProfile?.restaurant_id,
         is_active: true
       };
-
-      console.log('Creating category with data:', categoryData);
 
       const { data, error } = await supabase
         .from('product_categories')
@@ -61,10 +35,7 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
         .select()
         .single();
       
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
@@ -73,7 +44,6 @@ const CreateCategoryModal = ({ open, onOpenChange }: CreateCategoryModalProps) =
       toast.success('Categoria criada com sucesso!');
     },
     onError: (error) => {
-      console.error('Mutation error:', error);
       toast.error('Erro ao criar categoria: ' + error.message);
     }
   });
