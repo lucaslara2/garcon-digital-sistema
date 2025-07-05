@@ -2112,6 +2112,10 @@ export type Database = {
         Args: { restaurant_uuid: string }
         Returns: boolean
       }
+      ensure_restaurant_user: {
+        Args: { restaurant_id: string }
+        Returns: string
+      }
       generate_daily_sales_report: {
         Args: Record<PropertyKey, never>
         Returns: undefined

@@ -41,6 +41,21 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
   const { data: loginInfo, refetch: refetchLoginInfo } = useQuery({
     queryKey: ['restaurant-login-info', restaurant.id],
     queryFn: async () => {
+      console.log('Buscando informações de login para restaurante:', restaurant.id);
+      
+      // Primeiro garantir que o usuário existe
+      const { data: userId, error: ensureError } = await supabase.rpc('ensure_restaurant_user', {
+        restaurant_id: restaurant.id
+      });
+
+      if (ensureError) {
+        console.error('Erro ao garantir usuário do restaurante:', ensureError);
+        return null;
+      }
+
+      console.log('Usuário garantido, ID:', userId);
+
+      // Agora buscar as informações de login
       const { data, error } = await supabase.rpc('get_restaurant_login_info', {
         restaurant_id: restaurant.id
       });
@@ -50,6 +65,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
         return null;
       }
       
+      console.log('Informações de login encontradas:', data);
       return data && data.length > 0 ? data[0] : null;
     }
   });
@@ -75,13 +91,18 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
         return;
       }
 
+      console.log('Alterando e-mail para usuário:', loginInfo.user_id, 'novo e-mail:', newEmail);
+
       // Usar a função do banco para atualizar e-mail
       const { error } = await supabase.rpc('update_user_email', {
         user_id: loginInfo.user_id,
         new_email: newEmail
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na função update_user_email:', error);
+        throw error;
+      }
 
       // Atualizar também o e-mail do restaurante
       const { error: restaurantError } = await supabase
@@ -89,7 +110,10 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
         .update({ email: newEmail })
         .eq('id', restaurant.id);
 
-      if (restaurantError) throw restaurantError;
+      if (restaurantError) {
+        console.error('Erro ao atualizar e-mail do restaurante:', restaurantError);
+        throw restaurantError;
+      }
 
       toast({
         title: "E-mail alterado com sucesso",
@@ -132,7 +156,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
         return;
       }
 
-      console.log('Tentando resetar senha para usuário:', loginInfo.user_id);
+      console.log('Resetando senha para usuário:', loginInfo.user_id);
       
       // Usar a função RPC para resetar senha
       const { error: resetError } = await supabase.rpc('reset_user_password', {
@@ -150,6 +174,8 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
         return;
       }
 
+      console.log('Senha resetada com sucesso');
+      
       toast({
         title: "Senha alterada com sucesso",
         description: "A nova senha foi definida para o restaurante.",
