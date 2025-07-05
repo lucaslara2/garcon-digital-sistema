@@ -7,7 +7,8 @@ import {
   Trash2, 
   Package, 
   DollarSign,
-  ImageIcon
+  ImageIcon,
+  Eye
 } from 'lucide-react';
 
 interface ProductsListProps {
@@ -17,7 +18,7 @@ interface ProductsListProps {
 const ProductsList = ({ products }: ProductsListProps) => {
   const getStockStatus = (product: any) => {
     const inventory = product.inventory?.[0];
-    if (!inventory) return { color: 'bg-gray-500', text: 'N/A' };
+    if (!inventory) return { color: 'bg-slate-500', text: 'N/A' };
     
     const { current_stock, min_stock } = inventory;
     
@@ -32,10 +33,12 @@ const ProductsList = ({ products }: ProductsListProps) => {
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Package className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">Nenhum produto encontrado</h3>
-        <p className="text-slate-400">Comece criando seu primeiro produto!</p>
+      <div className="bg-slate-800 border border-slate-700 rounded-lg">
+        <div className="text-center py-12">
+          <Package className="h-16 w-16 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">Nenhum produto encontrado</h3>
+          <p className="text-slate-400">Comece criando seu primeiro produto!</p>
+        </div>
       </div>
     );
   }
@@ -48,7 +51,7 @@ const ProductsList = ({ products }: ProductsListProps) => {
         return (
           <div 
             key={product.id} 
-            className="bg-slate-700 border border-slate-600 rounded-lg p-4 hover:bg-slate-600 transition-colors"
+            className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:bg-slate-750 transition-colors"
           >
             <div className="flex items-center space-x-4">
               {/* Product Image */}
@@ -60,7 +63,7 @@ const ProductsList = ({ products }: ProductsListProps) => {
                     className="w-16 h-16 object-cover rounded-lg"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center">
+                  <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center">
                     <ImageIcon className="h-6 w-6 text-slate-400" />
                   </div>
                 )}
@@ -80,7 +83,7 @@ const ProductsList = ({ products }: ProductsListProps) => {
                     <div className="flex items-center space-x-3 mt-2">
                       {/* Category */}
                       {product.category && (
-                        <Badge variant="secondary" className="bg-slate-600 text-slate-300 text-xs">
+                        <Badge variant="secondary" className="bg-slate-700 text-slate-300 text-xs">
                           {product.category.name}
                         </Badge>
                       )}
@@ -88,6 +91,14 @@ const ProductsList = ({ products }: ProductsListProps) => {
                       {/* Stock Status */}
                       <Badge className={`${stockStatus.color} text-white text-xs`}>
                         {stockStatus.text}
+                      </Badge>
+                      
+                      {/* Active Status */}
+                      <Badge 
+                        className={product.is_active ? 'bg-green-600' : 'bg-red-600'} 
+                        variant="secondary"
+                      >
+                        {product.is_active ? 'Ativo' : 'Inativo'}
                       </Badge>
                       
                       {/* Addons */}
@@ -118,7 +129,14 @@ const ProductsList = ({ products }: ProductsListProps) => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500"
+                  className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
