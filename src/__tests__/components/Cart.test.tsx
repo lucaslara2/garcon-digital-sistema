@@ -1,5 +1,8 @@
+
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { screen } from '@testing-library/dom';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { Cart } from '@/components/pos/Cart';
@@ -38,20 +41,22 @@ describe('Cart Component', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('calls onAddToCart when plus button is clicked', () => {
+  it('calls onAddToCart when plus button is clicked', async () => {
+    const user = userEvent.setup();
     render(<Cart {...mockProps} />);
     
     const increaseButton = screen.getByRole('button', { name: /plus/i });
-    fireEvent.click(increaseButton);
+    await user.click(increaseButton);
     
     expect(mockProps.onAddToCart).toHaveBeenCalledWith(mockCartItems[0]);
   });
 
-  it('calls onRemoveFromCart when minus button is clicked', () => {
+  it('calls onRemoveFromCart when minus button is clicked', async () => {
+    const user = userEvent.setup();
     render(<Cart {...mockProps} />);
     
     const decreaseButton = screen.getByRole('button', { name: /minus/i });
-    fireEvent.click(decreaseButton);
+    await user.click(decreaseButton);
     
     expect(mockProps.onRemoveFromCart).toHaveBeenCalledWith('1');
   });
