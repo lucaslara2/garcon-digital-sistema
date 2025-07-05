@@ -1,9 +1,7 @@
 
 import React from 'react';
-import { GradientCard } from '@/components/ui/gradient-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Receipt, Printer, Clock, User, MapPin } from 'lucide-react';
 
 interface OrderItem {
@@ -38,17 +36,19 @@ interface OrderTicketProps {
 export function OrderTicket({ order }: OrderTicketProps) {
   if (!order) {
     return (
-      <GradientCard 
-        title="Comanda do Pedido" 
-        icon={<Receipt className="h-5 w-5" />}
-        className="animate-fade-in h-full"
-      >
-        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-          <Receipt className="h-16 w-16 mb-4 text-slate-600" />
-          <p className="text-lg mb-2">Selecione um pedido</p>
-          <p className="text-sm">Clique em um pedido para ver a comanda</p>
+      <div className="bg-slate-900 rounded-lg border border-slate-800 h-full">
+        <div className="p-4 border-b border-slate-800">
+          <h2 className="text-lg font-semibold text-white flex items-center">
+            <Receipt className="h-5 w-5 mr-2 text-amber-400" />
+            Comanda do Pedido
+          </h2>
         </div>
-      </GradientCard>
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <Receipt className="h-12 w-12 mb-4 text-slate-600" />
+          <p className="text-lg font-medium mb-2">Selecione um pedido</p>
+          <p className="text-sm text-slate-500">Clique em um pedido para ver detalhes</p>
+        </div>
+      </div>
     );
   }
 
@@ -70,26 +70,25 @@ export function OrderTicket({ order }: OrderTicketProps) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <GradientCard 
-      title="Comanda do Pedido" 
-      icon={<Receipt className="h-5 w-5" />}
-      className="animate-fade-in h-full"
-    >
-      <div className="space-y-4">
-        {/* Cabeçalho da Comanda */}
-        <div className="text-center border-b border-slate-600 pb-4">
+    <div className="bg-slate-900 rounded-lg border border-slate-800 h-full flex flex-col">
+      <div className="p-4 border-b border-slate-800">
+        <h2 className="text-lg font-semibold text-white flex items-center">
+          <Receipt className="h-5 w-5 mr-2 text-amber-400" />
+          Comanda do Pedido
+        </h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Cabeçalho */}
+        <div className="text-center border-b border-slate-800 pb-4">
           <h3 className="text-xl font-bold text-white mb-2">
             PEDIDO #{order.id.slice(-8)}
           </h3>
           <Badge className={`${getStatusColor(order.status)} text-white mb-2`}>
             {getStatusText(order.status)}
           </Badge>
-          <div className="text-sm text-slate-300 space-y-1">
+          <div className="text-sm text-slate-300">
             <div className="flex items-center justify-center space-x-2">
               <Clock className="h-4 w-4" />
               <span>{new Date(order.created_at).toLocaleString()}</span>
@@ -111,23 +110,14 @@ export function OrderTicket({ order }: OrderTicketProps) {
                 : 'Balcão'
             }</span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-300">
-            <Receipt className="h-4 w-4" />
-            <span><strong>Tipo:</strong> {
-              order.order_type === 'dine_in' ? 'No Local' : 
-              order.order_type === 'takeout' ? 'Retirada' : 'Delivery'
-            }</span>
-          </div>
         </div>
 
-        <Separator className="bg-slate-600" />
-
-        {/* Itens do Pedido */}
+        {/* Itens */}
         <div className="space-y-3">
           <h4 className="font-semibold text-white">Itens do Pedido:</h4>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2">
             {order.order_items.map((item) => (
-              <div key={item.id} className="flex justify-between items-start p-3 bg-slate-700/50 rounded-lg">
+              <div key={item.id} className="flex justify-between items-start p-3 bg-slate-800 rounded-lg border border-slate-700">
                 <div className="flex-1">
                   <div className="font-medium text-white">{item.products.name}</div>
                   <div className="text-sm text-slate-400">
@@ -142,10 +132,8 @@ export function OrderTicket({ order }: OrderTicketProps) {
           </div>
         </div>
 
-        <Separator className="bg-slate-600" />
-
         {/* Total */}
-        <div className="space-y-2">
+        <div className="space-y-2 border-t border-slate-800 pt-4">
           <div className="flex justify-between text-slate-300">
             <span>Subtotal:</span>
             <span>R$ {order.subtotal.toFixed(2)}</span>
@@ -155,18 +143,18 @@ export function OrderTicket({ order }: OrderTicketProps) {
             <span className="text-amber-400">R$ {order.total.toFixed(2)}</span>
           </div>
         </div>
-
-        {/* Botão de Imprimir */}
-        <div className="pt-4">
-          <Button
-            onClick={handlePrint}
-            className="w-full bg-slate-600 hover:bg-slate-700 text-white"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimir Comanda
-          </Button>
-        </div>
       </div>
-    </GradientCard>
+
+      {/* Botão Imprimir */}
+      <div className="p-4 border-t border-slate-800">
+        <Button
+          onClick={() => window.print()}
+          className="w-full bg-slate-700 hover:bg-slate-600 text-white"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          Imprimir Comanda
+        </Button>
+      </div>
+    </div>
   );
 }

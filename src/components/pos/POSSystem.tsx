@@ -221,7 +221,7 @@ const POSSystem = () => {
 
   if (!userProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <LoadingSpinner size="lg" text="Carregando sistema..." />
       </div>
     );
@@ -230,49 +230,32 @@ const POSSystem = () => {
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-      {/* Header Premium */}
-      <div className="bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-slate-950">
+      {/* Header Simples */}
+      <div className="bg-slate-900 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-3 rounded-xl shadow-lg">
-                  <Store className="h-7 w-7 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-slate-900"></div>
+            <div className="flex items-center space-x-3">
+              <div className="bg-amber-500 p-2 rounded-lg">
+                <Store className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                  Sistema PDV
-                </h1>
-                <p className="text-slate-400 text-sm font-medium">
-                  {userProfile.name} • {new Date().toLocaleDateString('pt-BR')}
-                </p>
+                <h1 className="text-lg font-semibold text-white">Sistema PDV</h1>
+                <p className="text-xs text-slate-400">{userProfile.name}</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-6">
-              {/* Stats Cards */}
-              <div className="flex items-center space-x-4">
-                <div className="bg-slate-800/60 backdrop-blur px-4 py-2 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center space-x-2">
-                    <ShoppingCart className="h-4 w-4 text-amber-400" />
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400">Itens</p>
-                      <p className="text-sm font-bold text-white">{totalItems}</p>
-                    </div>
-                  </div>
+            <div className="flex items-center space-x-4">
+              <div className="bg-slate-800 px-3 py-1.5 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <ShoppingCart className="h-4 w-4 text-amber-400" />
+                  <span className="text-sm text-white">{totalItems} itens</span>
                 </div>
-                
-                <div className="bg-gradient-to-br from-amber-900/40 to-orange-900/40 backdrop-blur px-4 py-2 rounded-xl border border-amber-500/30">
-                  <div className="flex items-center space-x-2">
-                    <Receipt className="h-4 w-4 text-amber-400" />
-                    <div className="text-right">
-                      <p className="text-xs text-amber-200/70">Total</p>
-                      <p className="text-lg font-bold text-amber-400">R$ {getTotal().toFixed(2)}</p>
-                    </div>
-                  </div>
+              </div>
+              <div className="bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-500/30">
+                <div className="flex items-center space-x-2">
+                  <Receipt className="h-4 w-4 text-amber-400" />
+                  <span className="text-sm font-semibold text-amber-400">R$ {getTotal().toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -280,17 +263,17 @@ const POSSystem = () => {
         </div>
       </div>
 
-      {/* Layout Principal Refinado */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+      {/* Layout Principal */}
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="grid grid-cols-12 gap-4 min-h-[calc(100vh-100px)]">
           
-          {/* Coluna 1: Produtos (4 colunas) */}
-          <div className="col-span-4">
+          {/* Produtos */}
+          <div className="col-span-3">
             <ProductGrid products={products} onAddToCart={addToCart} />
           </div>
 
-          {/* Coluna 2: Carrinho e Processamento (3 colunas) */}
-          <div className="col-span-3 space-y-6 flex flex-col">
+          {/* Detalhes do Pedido */}
+          <div className="col-span-3 space-y-4">
             <OrderDetails
               selectedTable={selectedTable}
               setSelectedTable={setSelectedTable}
@@ -309,32 +292,30 @@ const POSSystem = () => {
             </div>
 
             {cart.length > 0 && (
-              <div className="animate-fade-in">
-                <PaymentSection
-                  subtotal={getSubtotal()}
-                  total={getTotal()}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  amountPaid={amountPaid}
-                  setAmountPaid={setAmountPaid}
-                  change={getChange()}
-                  onProcessOrder={handleProcessOrder}
-                  isProcessing={processOrderMutation.isPending}
-                />
-              </div>
+              <PaymentSection
+                subtotal={getSubtotal()}
+                total={getTotal()}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                amountPaid={amountPaid}
+                setAmountPaid={setAmountPaid}
+                change={getChange()}
+                onProcessOrder={handleProcessOrder}
+                isProcessing={processOrderMutation.isPending}
+              />
             )}
           </div>
 
-          {/* Coluna 3: Pedidos Ativos (2.5 colunas) */}
-          <div className="col-span-2.5">
+          {/* Pedidos Ativos */}
+          <div className="col-span-3">
             <ActiveOrders 
               onOrderSelect={setSelectedOrder}
               selectedOrderId={selectedOrder?.id || null}
             />
           </div>
 
-          {/* Coluna 4: Comanda (2.5 colunas) */}
-          <div className="col-span-2.5">
+          {/* Comanda */}
+          <div className="col-span-3">
             <OrderTicket order={selectedOrder} />
           </div>
         </div>
