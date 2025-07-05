@@ -10,18 +10,18 @@ const AdminReports: React.FC = () => {
     queryKey: ['admin-subscription-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('restaurant_subscriptions')
+        .from('restaurants')
         .select('status, plan_type');
       
       if (error) throw error;
       
       const stats = {
         total: data.length,
-        active: data.filter(sub => sub.status === 'active').length,
-        inactive: data.filter(sub => sub.status === 'inactive').length,
-        basic: data.filter(sub => sub.plan_type === 'basic').length,
-        premium: data.filter(sub => sub.plan_type === 'premium').length,
-        enterprise: data.filter(sub => sub.plan_type === 'enterprise').length,
+        active: data.filter(restaurant => restaurant.status === 'active').length,
+        inactive: data.filter(restaurant => restaurant.status !== 'active').length,
+        basic: data.filter(restaurant => restaurant.plan_type === 'basic').length,
+        premium: data.filter(restaurant => restaurant.plan_type === 'premium').length,
+        enterprise: data.filter(restaurant => restaurant.plan_type === 'enterprise').length,
       };
       
       return stats;
@@ -32,16 +32,16 @@ const AdminReports: React.FC = () => {
     queryKey: ['admin-revenue-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('subscription_invoices')
-        .select('amount_paid, status')
-        .eq('status', 'paid');
+        .from('payments')
+        .select('amount, status')
+        .eq('status', 'completed');
       
       if (error) throw error;
       
-      const totalRevenue = data.reduce((sum, invoice) => sum + invoice.amount_paid, 0);
+      const totalRevenue = data.reduce((sum, payment) => sum + Number(payment.amount), 0);
       
       return {
-        totalRevenue: totalRevenue / 100, // Convert from cents to reais
+        totalRevenue: totalRevenue,
         totalInvoices: data.length
       };
     }
@@ -61,7 +61,7 @@ const AdminReports: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total de Assinaturas */}
+            {/* Total de Restaurantes */}
             <div className="bg-slate-700 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -74,11 +74,11 @@ const AdminReports: React.FC = () => {
               </div>
             </div>
 
-            {/* Assinaturas Ativas */}
+            {/* Restaurantes Ativos */}
             <div className="bg-slate-700 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Assinaturas Ativas</p>
+                  <p className="text-slate-400 text-sm">Restaurantes Ativos</p>
                   <p className="text-white text-2xl font-bold">
                     {subscriptionStats?.active || 0}
                   </p>
@@ -100,11 +100,11 @@ const AdminReports: React.FC = () => {
               </div>
             </div>
 
-            {/* Faturas Pagas */}
+            {/* Pagamentos Processados */}
             <div className="bg-slate-700 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">Faturas Pagas</p>
+                  <p className="text-slate-400 text-sm">Pagamentos Processados</p>
                   <p className="text-white text-2xl font-bold">
                     {revenueData?.totalInvoices || 0}
                   </p>
