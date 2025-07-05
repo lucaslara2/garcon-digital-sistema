@@ -23,10 +23,18 @@ import {
   Ticket,
   CreditCard,
   MapPin,
-  Filter
+  Filter,
+  Users,
+  ShoppingCart,
+  TrendingUp,
+  Plus,
+  BarChart3,
+  FileText,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
+import RestaurantDetailsView from './RestaurantDetailsView';
 
 type RestaurantStatus = Database['public']['Enums']['restaurant_status'];
 
@@ -40,6 +48,7 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [showDetails, setShowDetails] = useState<string | null>(null);
 
   const { data: restaurants, isLoading } = useQuery({
     queryKey: ['master-restaurants'],
@@ -52,6 +61,44 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
       if (error) throw error;
       return data;
     }
+  });
+
+  // Buscar estatísticas dos restaurantes
+  const { data: restaurantStats } = useQuery({
+    queryKey: ['restaurants-stats'],
+    queryFn: async () => {
+      if (!restaurants) return new Map();
+
+      const statsMap = new Map();
+      
+      await Promise.all(
+        restaurants.map(async (restaurant) => {
+          const [ordersResult, clientsResult, revenueResult] = await Promise.all([
+            supabase.from('orders').select('id, status').eq('restaurant_id', restaurant.id),
+            supabase.from('clients').select('id').eq('restaurant_id', restaurant.id),
+            supabase.from('payments').select('amount').eq('restaurant_id', restaurant.id).eq('status', 'completed')
+          ]);
+
+          const orders = ordersResult.data || [];
+          const clients = clientsResult.data || [];
+          const payments = revenueResult.data || [];
+
+          const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+          const completedOrders = orders.filter(o => o.status === 'delivered').length;
+
+          statsMap.set(restaurant.id, {
+            totalOrders: orders.length,
+            completedOrders,
+            totalClients: clients.length,
+            totalRevenue,
+            averageTicket: completedOrders > 0 ? totalRevenue / completedOrders : 0
+          });
+        })
+      );
+
+      return statsMap;
+    },
+    enabled: !!restaurants
   });
 
   // Buscar tickets de implementação por restaurante
@@ -104,7 +151,7 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
           restaurant_id: restaurantId,
           user_id: userProfile?.id,
           title: `Implementação - ${restaurant.name}`,
-          description: `Ticket de implementação criado para o restaurante ${restaurant.name}.\n\nPlano: ${restaurant.plan_type}\nEmail: ${restaurant.email}\nTelefone: ${restaurant.phone}`,
+          description: `Ticket de implementação criado para o restaurante ${restaurant.name}.\n\nPlano: ${restaurant.plan_type}\nEmail: ${restaurant.email}\nTelefone: ${restaurant.phone}\nStatus: ${restaurant.status}`,
           category: 'implementation',
           priority: 'high',
           status: 'open'
@@ -168,6 +215,14 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
     }
   };
 
+  const handleViewDetails = (restaurantId: string) => {
+    setShowDetails(restaurantId);
+  };
+
+  const handleBackFromDetails = () => {
+    setShowDetails(null);
+  };
+
   const filteredRestaurants = restaurants?.filter(restaurant => {
     const matchesSearch = searchTerm === '' || 
       restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,6 +234,17 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
     
     return matchesSearch && matchesStatus && matchesPlan;
   });
+
+  // Se estiver mostrando detalhes, renderizar componente de detalhes
+  if (showDetails) {
+    return (
+      <RestaurantDetailsView
+        restaurantId={showDetails}
+        onBack={handleBackFromDetails}
+        onNavigateToTab={onNavigateToTab || (() => {})}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -294,6 +360,7 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
               {filteredRestaurants?.map((restaurant) => {
                 const implementationStatus = getImplementationStatus(restaurant.id);
                 const isExpiringSoon = new Date(restaurant.plan_expires_at) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                const stats = restaurantStats?.get(restaurant.id);
                 
                 return (
                   <div key={restaurant.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
@@ -324,7 +391,7 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
                           <span className="flex items-center gap-2">
                             <Mail className="h-4 w-4" />
                             {restaurant.email}
@@ -342,9 +409,43 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
                             Expira: {new Date(restaurant.plan_expires_at).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
+
+                        {/* Estatísticas rápidas */}
+                        {stats && (
+                          <div className="grid grid-cols-4 gap-4 p-3 bg-gray-50 rounded-lg mb-3">
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <ShoppingCart className="h-3 w-3 text-blue-500" />
+                                <span className="text-xs text-gray-600">Pedidos</span>
+                              </div>
+                              <div className="font-semibold text-sm">{stats.totalOrders}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Users className="h-3 w-3 text-purple-500" />
+                                <span className="text-xs text-gray-600">Clientes</span>
+                              </div>
+                              <div className="font-semibold text-sm">{stats.totalClients}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <TrendingUp className="h-3 w-3 text-green-500" />
+                                <span className="text-xs text-gray-600">Receita</span>
+                              </div>
+                              <div className="font-semibold text-sm">R$ {stats.totalRevenue.toFixed(0)}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <BarChart3 className="h-3 w-3 text-orange-500" />
+                                <span className="text-xs text-gray-600">Ticket Médio</span>
+                              </div>
+                              <div className="font-semibold text-sm">R$ {stats.averageTicket.toFixed(0)}</div>
+                            </div>
+                          </div>
+                        )}
                         
                         {restaurant.address && (
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="text-sm text-gray-600">
                             <span className="flex items-center gap-2">
                               <MapPin className="h-4 w-4" />
                               {restaurant.address}
@@ -354,13 +455,12 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
                       </div>
                       
                       <div className="flex flex-col gap-2 ml-4">
-                        {/* Ações para Staff/Admin */}
+                        {/* Ações primárias */}
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => handleNavigateToImplementation(restaurant.id)}
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleViewDetails(restaurant.id)}
+                            className="bg-blue-600 hover:bg-blue-700"
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             Ver Detalhes
@@ -373,11 +473,14 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
                               disabled={createImplementationTicketMutation.isPending}
                               className="bg-orange-600 hover:bg-orange-700"
                             >
-                              <Settings className="h-3 w-3 mr-1" />
-                              Marcar Implementação
+                              <Zap className="h-3 w-3 mr-1" />
+                              Implementar
                             </Button>
                           )}
-                          
+                        </div>
+
+                        {/* Ações secundárias */}
+                        <div className="flex gap-2">
                           {implementationStatus && (
                             <Button
                               size="sm"
@@ -385,15 +488,25 @@ const MasterRestaurantsView: React.FC<MasterRestaurantsViewProps> = ({ onNavigat
                               onClick={() => handleNavigateToImplementation(restaurant.id)}
                               className="text-orange-600 border-orange-200 hover:bg-orange-50"
                             >
-                              <Ticket className="h-3 w-3 mr-1" />
-                              Ver Implementação
+                              <Settings className="h-3 w-3 mr-1" />
+                              Implementação
                             </Button>
                           )}
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onNavigateToTab && onNavigateToTab('tickets')}
+                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                          >
+                            <Ticket className="h-3 w-3 mr-1" />
+                            Tickets
+                          </Button>
                         </div>
                         
                         {/* Ações de Admin */}
                         {userProfile?.role === 'admin' && (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 pt-2 border-t">
                             {restaurant.status !== 'active' && (
                               <Button
                                 size="sm"

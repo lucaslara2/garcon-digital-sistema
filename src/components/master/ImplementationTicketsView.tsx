@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,9 +22,15 @@ import {
   Mail,
   FileText,
   Filter,
-  X
+  X,
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface ImplementationTicketsViewProps {
   contextRestaurantId?: string;
@@ -75,6 +82,24 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
     }
   });
 
+  // Buscar informações do restaurante específico se houver contexto
+  const { data: contextRestaurant } = useQuery({
+    queryKey: ['context-restaurant', contextRestaurantId],
+    queryFn: async () => {
+      if (!contextRestaurantId) return null;
+      
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', contextRestaurantId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contextRestaurantId
+  });
+
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status }: { ticketId: string, status: string }) => {
       const updateData: any = { 
@@ -105,6 +130,49 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
     onError: (error: any) => {
       console.error('Erro na mutação:', error);
       toast.error('Erro ao atualizar status: ' + error.message);
+    }
+  });
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: async (ticketId: string) => {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['implementation-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['master-stats'] });
+      toast.success('Ticket removido com sucesso!');
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao remover ticket: ' + error.message);
+    }
+  });
+
+  const createImplementationTicketMutation = useMutation({
+    mutationFn: async () => {
+      if (!contextRestaurant) throw new Error('Restaurante não encontrado');
+
+      const { error } = await supabase
+        .from('tickets')
+        .insert({
+          restaurant_id: contextRestaurantId,
+          user_id: userProfile?.id,
+          title: `Implementação - ${contextRestaurant.name}`,
+          description: `Ticket de implementação criado para o restaurante ${contextRestaurant.name}.\n\nPlano: ${contextRestaurant.plan_type}\nEmail: ${contextRestaurant.email}\nTelefone: ${contextRestaurant.phone}`,
+          category: 'implementation',
+          priority: 'high',
+          status: 'open'
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['implementation-tickets'] });
+      toast.success('Ticket de implementação criado!');
     }
   });
 
@@ -168,10 +236,6 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
     return matchesSearch && matchesPriority;
   });
 
-  const clearContext = () => {
-    // Esta função seria chamada pela parent component se necessário
-  };
-
   return (
     <div className="space-y-6">
       {/* Context Alert */}
@@ -181,18 +245,28 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-blue-600" />
-                <span className="text-blue-800 font-medium">
-                  Visualizando implementação para restaurante específico
-                </span>
+                <div>
+                  <span className="text-blue-800 font-medium">
+                    {contextRestaurant?.name || 'Restaurante específico'}
+                  </span>
+                  <p className="text-sm text-blue-700">
+                    Visualizando implementação para este restaurante
+                  </p>
+                </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={clearContext}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {filteredTickets?.length === 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => createImplementationTicketMutation.mutate()}
+                    disabled={createImplementationTicketMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Criar Ticket
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -329,7 +403,7 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                       </div>
                       
                       {/* Restaurant Info */}
-                      {ticket.restaurant && (
+                      {ticket.restaurant && !contextRestaurantId && (
                         <div className="mb-3 p-3 bg-blue-50 rounded-lg">
                           <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
                             <Building2 className="h-4 w-4" />
@@ -376,12 +450,12 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
+                          {format(new Date(ticket.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                         </span>
                         {ticket.resolved_at && (
                           <span className="flex items-center gap-1 text-green-600">
                             <CheckCircle className="h-3 w-3" />
-                            Resolvido em {new Date(ticket.resolved_at).toLocaleDateString('pt-BR')}
+                            Resolvido em {format(new Date(ticket.resolved_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                           </span>
                         )}
                       </div>
@@ -430,6 +504,16 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                           Arquivar
                         </Button>
                       )}
+                      {userProfile?.role === 'admin' && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteTicketMutation.mutate(ticket.id)}
+                          disabled={deleteTicketMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -446,6 +530,16 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                   </p>
                   {(searchTerm || priorityFilter !== 'all') && (
                     <p className="text-sm mt-2">Tente ajustar sua busca ou filtros</p>
+                  )}
+                  {contextRestaurantId && filteredTickets?.length === 0 && (
+                    <Button
+                      onClick={() => createImplementationTicketMutation.mutate()}
+                      disabled={createImplementationTicketMutation.isPending}
+                      className="mt-4"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeiro Ticket
+                    </Button>
                   )}
                 </div>
               )}

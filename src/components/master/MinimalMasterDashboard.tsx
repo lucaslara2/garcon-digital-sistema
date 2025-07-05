@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,8 @@ import {
   TrendingUp,
   Shield,
   Settings,
-  Plus
+  Plus,
+  ArrowLeft
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +28,7 @@ const MinimalMasterDashboard = () => {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [contextData, setContextData] = useState<{ restaurantId?: string }>({});
+  const [navigationHistory, setNavigationHistory] = useState<Array<{tab: string, context?: any}>>([]);
 
   // Buscar estatísticas
   const { data: stats } = useQuery({
@@ -66,6 +69,12 @@ const MinimalMasterDashboard = () => {
 
   const handleTabClick = (tabId: string) => {
     console.log('Changing tab from', activeTab, 'to', tabId);
+    
+    // Salvar estado atual no histórico se não for overview
+    if (activeTab !== 'overview') {
+      setNavigationHistory(prev => [...prev, { tab: activeTab, context: contextData }]);
+    }
+    
     setActiveTab(tabId);
     // Limpar contexto ao navegar normalmente
     setContextData({});
@@ -73,8 +82,27 @@ const MinimalMasterDashboard = () => {
 
   const handleNavigateToTab = (tabId: string, restaurantId?: string) => {
     console.log('Navigating to tab:', tabId, 'with restaurant:', restaurantId);
+    
+    // Salvar estado atual no histórico
+    if (activeTab !== tabId) {
+      setNavigationHistory(prev => [...prev, { tab: activeTab, context: contextData }]);
+    }
+    
     setActiveTab(tabId);
     setContextData({ restaurantId });
+  };
+
+  const handleBack = () => {
+    if (navigationHistory.length > 0) {
+      const previous = navigationHistory[navigationHistory.length - 1];
+      setNavigationHistory(prev => prev.slice(0, -1));
+      setActiveTab(previous.tab);
+      setContextData(previous.context || {});
+    } else {
+      // Fallback para overview se não há histórico
+      setActiveTab('overview');
+      setContextData({});
+    }
   };
 
   const renderTabContent = () => {
@@ -226,20 +254,35 @@ const MinimalMasterDashboard = () => {
     }
   };
 
+  const showBackButton = navigationHistory.length > 0 || (contextData.restaurantId && activeTab !== 'overview');
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
-              <p className="text-gray-600">Gestão completa do sistema</p>
-              {contextData.restaurantId && (
-                <p className="text-sm text-blue-600 mt-1">
-                  Contexto: Restaurante selecionado
-                </p>
+            <div className="flex items-center gap-4">
+              {showBackButton && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Voltar
+                </Button>
               )}
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
+                <p className="text-gray-600">Gestão completa do sistema</p>
+                {contextData.restaurantId && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    Contexto: Restaurante selecionado
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <RestaurantRegistrationModal />
