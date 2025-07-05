@@ -28,7 +28,6 @@ const MinimalMasterDashboard = () => {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [contextData, setContextData] = useState<{ restaurantId?: string }>({});
-  const [navigationHistory, setNavigationHistory] = useState<Array<{tab: string, context?: any}>>([]);
 
   // Buscar estatísticas
   const { data: stats } = useQuery({
@@ -68,41 +67,26 @@ const MinimalMasterDashboard = () => {
   ];
 
   const handleTabClick = (tabId: string) => {
-    console.log('Changing tab from', activeTab, 'to', tabId);
-    
-    // Salvar estado atual no histórico se não for overview
-    if (activeTab !== 'overview') {
-      setNavigationHistory(prev => [...prev, { tab: activeTab, context: contextData }]);
-    }
-    
+    console.log('Changing tab to:', tabId);
     setActiveTab(tabId);
-    // Limpar contexto ao navegar normalmente
+    // Limpar contexto ao navegar manualmente
     setContextData({});
   };
 
   const handleNavigateToTab = (tabId: string, restaurantId?: string) => {
     console.log('Navigating to tab:', tabId, 'with restaurant:', restaurantId);
-    
-    // Salvar estado atual no histórico
-    if (activeTab !== tabId) {
-      setNavigationHistory(prev => [...prev, { tab: activeTab, context: contextData }]);
-    }
-    
     setActiveTab(tabId);
-    setContextData({ restaurantId });
+    if (restaurantId) {
+      setContextData({ restaurantId });
+    } else {
+      setContextData({});
+    }
   };
 
   const handleBack = () => {
-    if (navigationHistory.length > 0) {
-      const previous = navigationHistory[navigationHistory.length - 1];
-      setNavigationHistory(prev => prev.slice(0, -1));
-      setActiveTab(previous.tab);
-      setContextData(previous.context || {});
-    } else {
-      // Fallback para overview se não há histórico
-      setActiveTab('overview');
-      setContextData({});
-    }
+    console.log('Going back to overview');
+    setActiveTab('overview');
+    setContextData({});
   };
 
   const renderTabContent = () => {
@@ -254,7 +238,7 @@ const MinimalMasterDashboard = () => {
     }
   };
 
-  const showBackButton = navigationHistory.length > 0 || (contextData.restaurantId && activeTab !== 'overview');
+  const showBackButton = contextData.restaurantId && activeTab !== 'overview';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -279,7 +263,7 @@ const MinimalMasterDashboard = () => {
                 <p className="text-gray-600">Gestão completa do sistema</p>
                 {contextData.restaurantId && (
                   <p className="text-sm text-blue-600 mt-1">
-                    Contexto: Restaurante selecionado
+                    Contexto: Restaurante específico
                   </p>
                 )}
               </div>

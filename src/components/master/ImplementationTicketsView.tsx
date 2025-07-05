@@ -21,11 +21,7 @@ import {
   Phone,
   Mail,
   FileText,
-  Filter,
-  X,
-  ArrowLeft,
   Plus,
-  Edit,
   Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -43,6 +39,8 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
+  console.log('ImplementationTicketsView - contextRestaurantId:', contextRestaurantId);
+
   // Limpar filtros quando contexto mudar
   useEffect(() => {
     if (contextRestaurantId) {
@@ -55,6 +53,8 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
   const { data: implementationTickets, isLoading } = useQuery({
     queryKey: ['implementation-tickets', statusFilter, contextRestaurantId],
     queryFn: async () => {
+      console.log('Fetching tickets with filter:', statusFilter, 'restaurant:', contextRestaurantId);
+      
       let query = supabase
         .from('tickets')
         .select(`
@@ -78,6 +78,8 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
         console.error('Erro ao buscar tickets de implementação:', error);
         throw error;
       }
+      
+      console.log('Tickets encontrados:', data?.length || 0);
       return data;
     }
   });
@@ -88,13 +90,19 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
     queryFn: async () => {
       if (!contextRestaurantId) return null;
       
+      console.log('Fetching context restaurant:', contextRestaurantId);
       const { data, error } = await supabase
         .from('restaurants')
         .select('*')
         .eq('id', contextRestaurantId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar restaurante:', error);
+        throw error;
+      }
+      
+      console.log('Context restaurant loaded:', data?.name);
       return data;
     },
     enabled: !!contextRestaurantId
@@ -102,6 +110,8 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status }: { ticketId: string, status: string }) => {
+      console.log('Updating ticket:', ticketId, 'to status:', status);
+      
       const updateData: any = { 
         status, 
         updated_at: new Date().toISOString()
@@ -135,6 +145,7 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
 
   const deleteTicketMutation = useMutation({
     mutationFn: async (ticketId: string) => {
+      console.log('Deleting ticket:', ticketId);
       const { error } = await supabase
         .from('tickets')
         .delete()
@@ -154,25 +165,41 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
 
   const createImplementationTicketMutation = useMutation({
     mutationFn: async () => {
-      if (!contextRestaurant) throw new Error('Restaurante não encontrado');
+      if (!contextRestaurant) {
+        throw new Error('Restaurante não encontrado');
+      }
+
+      console.log('Creating implementation ticket for restaurant:', contextRestaurant.name);
+
+      const ticketData = {
+        restaurant_id: contextRestaurantId,
+        user_id: userProfile?.id,
+        title: `Implementação - ${contextRestaurant.name}`,
+        description: `Ticket de implementação criado para o restaurante ${contextRestaurant.name}.\n\nPlano: ${contextRestaurant.plan_type}\nEmail: ${contextRestaurant.email}\nTelefone: ${contextRestaurant.phone}`,
+        category: 'implementation',
+        priority: 'high',
+        status: 'open'
+      };
+
+      console.log('Ticket data:', ticketData);
 
       const { error } = await supabase
         .from('tickets')
-        .insert({
-          restaurant_id: contextRestaurantId,
-          user_id: userProfile?.id,
-          title: `Implementação - ${contextRestaurant.name}`,
-          description: `Ticket de implementação criado para o restaurante ${contextRestaurant.name}.\n\nPlano: ${contextRestaurant.plan_type}\nEmail: ${contextRestaurant.email}\nTelefone: ${contextRestaurant.phone}`,
-          category: 'implementation',
-          priority: 'high',
-          status: 'open'
-        });
+        .insert(ticketData);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar ticket:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['implementation-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['master-stats'] });
       toast.success('Ticket de implementação criado!');
+    },
+    onError: (error: any) => {
+      console.error('Erro ao criar ticket:', error);
+      toast.error('Erro ao criar ticket: ' + error.message);
     }
   });
 
@@ -247,7 +274,7 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                 <Building2 className="h-4 w-4 text-blue-600" />
                 <div>
                   <span className="text-blue-800 font-medium">
-                    {contextRestaurant?.name || 'Restaurante específico'}
+                    {contextRestaurant?.name || 'Carregando...'}
                   </span>
                   <p className="text-sm text-blue-700">
                     Visualizando implementação para este restaurante
@@ -255,7 +282,7 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {filteredTickets?.length === 0 && (
+                {(!filteredTickets || filteredTickets.length === 0) && contextRestaurant && (
                   <Button
                     size="sm"
                     onClick={() => createImplementationTicketMutation.mutate()}
@@ -531,7 +558,7 @@ const ImplementationTicketsView: React.FC<ImplementationTicketsViewProps> = ({ c
                   {(searchTerm || priorityFilter !== 'all') && (
                     <p className="text-sm mt-2">Tente ajustar sua busca ou filtros</p>
                   )}
-                  {contextRestaurantId && filteredTickets?.length === 0 && (
+                  {contextRestaurantId && (!filteredTickets || filteredTickets.length === 0) && contextRestaurant && (
                     <Button
                       onClick={() => createImplementationTicketMutation.mutate()}
                       disabled={createImplementationTicketMutation.isPending}
