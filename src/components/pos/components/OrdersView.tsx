@@ -32,7 +32,6 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
 
-  // Buscar todos os pedidos ativos
   const { data: allOrders } = useQuery({
     queryKey: ['pos-orders', userProfile?.restaurant_id],
     queryFn: async () => {
@@ -62,7 +61,6 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
     refetchInterval: 5000
   });
 
-  // Filtrar pedidos por status
   const pendingOrders = allOrders?.filter(order => order.status === 'pending') || [];
   const preparingOrders = allOrders?.filter(order => order.status === 'preparing') || [];
   const readyOrders = allOrders?.filter(order => order.status === 'ready') || [];
@@ -221,7 +219,6 @@ ${order.delivery_instructions || ''}
       
       <CardContent>
         <div className="space-y-3">
-          {/* Informações do Cliente */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4 text-gray-400" />
@@ -233,7 +230,6 @@ ${order.delivery_instructions || ''}
             </div>
           </div>
 
-          {/* Mesa/Local */}
           <div className="flex items-start space-x-2 text-sm">
             <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
             <span className="text-gray-600">
@@ -244,7 +240,6 @@ ${order.delivery_instructions || ''}
             </span>
           </div>
 
-          {/* Itens do Pedido */}
           <div className="space-y-2">
             {order.order_items.map((item: any, index: number) => (
               <div key={index} className="bg-gray-50 p-2 rounded text-sm">
@@ -264,7 +259,6 @@ ${order.delivery_instructions || ''}
             ))}
           </div>
 
-          {/* Total e Pagamento */}
           <div className="flex items-center justify-between pt-2 border-t">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-4 w-4 text-green-600" />
@@ -277,14 +271,12 @@ ${order.delivery_instructions || ''}
             </span>
           </div>
 
-          {/* Instruções de Entrega */}
           {order.delivery_instructions && (
             <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border border-yellow-200">
               <strong>Instruções:</strong> {order.delivery_instructions}
             </div>
           )}
 
-          {/* Ações */}
           <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
             {actions}
           </div>
@@ -435,52 +427,85 @@ ${order.delivery_instructions || ''}
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Comandas Individuais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {allOrders?.map(order => (
-            <Card 
+            <div 
               key={order.id} 
-              className={`cursor-pointer hover:shadow-lg transition-all ${
+              className={`bg-white border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg ${
                 selectedOrder?.id === order.id 
-                  ? 'ring-2 ring-blue-500 bg-blue-50 shadow-lg' 
-                  : 'hover:shadow-md'
+                  ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                  : 'border-gray-200 hover:border-blue-300'
               }`}
               onClick={() => onOrderSelect(order)}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Badge className={`text-xs ${getStatusColor(order.status)}`}>
+              {/* Cabeçalho da Comanda */}
+              <div className="border-b border-dashed border-gray-300 pb-3 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold text-gray-900">PEDIDO</h3>
+                  <Badge className={`text-xs px-2 py-1 ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
                   </Badge>
-                  <span className="text-sm font-bold">#{order.id.slice(-8)}</span>
                 </div>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm">
-                    <User className="h-3 w-3 text-gray-400 mr-1" />
-                    <span className="font-medium truncate">{order.customer_name}</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-3 w-3 text-gray-400 mr-1" />
-                    <span className="truncate">
-                      {order.restaurant_tables?.table_number 
-                        ? `Mesa ${order.restaurant_tables.table_number}`
-                        : 'Balcão'
-                      }
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">{order.order_items.length} itens</span>
-                    <span className="font-bold text-green-600">R$ {order.total.toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="text-xs text-gray-500">
-                    {formatTimeAgo(order.created_at)}
-                  </div>
+                <div className="text-center">
+                  <span className="text-2xl font-bold text-gray-900">#{order.id.slice(-8)}</span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="text-center text-sm text-gray-500 mt-1">
+                  {new Date(order.created_at).toLocaleString('pt-BR')}
+                </div>
+              </div>
+
+              {/* Informações do Cliente */}
+              <div className="space-y-2 mb-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Cliente:</span>
+                  <span className="font-medium text-gray-900">{order.customer_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Mesa:</span>
+                  <span className="font-medium text-gray-900">
+                    {order.restaurant_tables?.table_number 
+                      ? `Mesa ${order.restaurant_tables.table_number}`
+                      : 'Balcão'
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tipo:</span>
+                  <span className="font-medium text-gray-900">
+                    {order.order_type === 'dine_in' ? 'Local' : 
+                     order.order_type === 'takeout' ? 'Balcão' : 'Delivery'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-b border-dashed border-gray-300 pb-3 mb-3">
+                <h4 className="font-semibold text-gray-900 mb-2">ITENS:</h4>
+                <div className="space-y-1">
+                  {order.order_items.slice(0, 3).map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span>{item.quantity}x {item.products.name}</span>
+                      <span>R$ {item.total_price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {order.order_items.length > 3 && (
+                    <div className="text-xs text-gray-500 text-center">
+                      +{order.order_items.length - 3} itens...
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-center font-bold text-lg">
+                <span>TOTAL:</span>
+                <span className="text-green-600">R$ {order.total.toFixed(2)}</span>
+              </div>
+
+              {/* Rodapé */}
+              <div className="mt-3 pt-3 border-t border-dashed border-gray-300">
+                <div className="text-xs text-gray-500 text-center">
+                  {formatTimeAgo(order.created_at)}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
         
