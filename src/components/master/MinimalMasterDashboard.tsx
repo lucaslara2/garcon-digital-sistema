@@ -11,13 +11,17 @@ import {
   CheckCircle, 
   AlertCircle, 
   TrendingUp,
-  Shield
+  Shield,
+  Settings,
+  Plus
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import MasterTicketsView from './MasterTicketsView';
 import MasterRestaurantsView from './MasterRestaurantsView';
 import MasterStaffView from './MasterStaffView';
+import ImplementationTicketsView from './ImplementationTicketsView';
+import RestaurantRegistrationModal from './RestaurantRegistrationModal';
 
 const MinimalMasterDashboard = () => {
   const { userProfile } = useAuth();
@@ -27,21 +31,26 @@ const MinimalMasterDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['master-stats'],
     queryFn: async () => {
-      const [restaurantsResult, ticketsResult] = await Promise.all([
+      const [restaurantsResult, ticketsResult, implementationResult] = await Promise.all([
         supabase.from('restaurants').select('status').eq('status', 'active'),
-        supabase.from('tickets').select('status')
+        supabase.from('tickets').select('status'),
+        supabase.from('tickets').select('status').eq('category', 'implementation')
       ]);
 
       const activeRestaurants = restaurantsResult.data?.length || 0;
       const totalTickets = ticketsResult.data?.length || 0;
       const openTickets = ticketsResult.data?.filter(t => t.status === 'open').length || 0;
       const resolvedTickets = ticketsResult.data?.filter(t => t.status === 'resolved').length || 0;
+      const implementationTickets = implementationResult.data?.length || 0;
+      const pendingImplementation = implementationResult.data?.filter(t => t.status === 'open').length || 0;
 
       return {
         activeRestaurants,
         totalTickets,
         openTickets,
         resolvedTickets,
+        implementationTickets,
+        pendingImplementation,
         resolutionRate: totalTickets > 0 ? Math.round((resolvedTickets / totalTickets) * 100) : 0
       };
     }
@@ -51,6 +60,7 @@ const MinimalMasterDashboard = () => {
     { id: 'overview', label: 'Visão Geral', icon: TrendingUp },
     { id: 'tickets', label: 'Tickets', icon: Ticket },
     { id: 'restaurants', label: 'Restaurantes', icon: Building2 },
+    { id: 'implementation', label: 'Implementação', icon: Settings },
     { id: 'staff', label: 'Equipe', icon: Users }
   ];
 
@@ -64,10 +74,13 @@ const MinimalMasterDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
               <p className="text-gray-600">Gestão completa do sistema</p>
             </div>
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-              <Shield className="h-3 w-3 mr-1" />
-              {userProfile?.role === 'admin' ? 'Administrador' : 'Suporte'}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <RestaurantRegistrationModal />
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Shield className="h-3 w-3 mr-1" />
+                {userProfile?.role === 'admin' ? 'Administrador' : 'Suporte'}
+              </Badge>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -88,6 +101,11 @@ const MinimalMasterDashboard = () => {
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
+                  {tab.id === 'implementation' && stats?.pendingImplementation > 0 && (
+                    <Badge className="bg-red-500 text-white text-xs px-1 py-0 min-w-[16px] h-4">
+                      {stats.pendingImplementation}
+                    </Badge>
+                  )}
                 </Button>
               );
             })}
@@ -98,7 +116,7 @@ const MinimalMasterDashboard = () => {
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-600">
@@ -144,6 +162,25 @@ const MinimalMasterDashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-gray-600">
+                    Implementações
+                  </CardTitle>
+                  <Settings className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {stats?.implementationTickets || 0}
+                  </div>
+                  {stats?.pendingImplementation > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      {stats.pendingImplementation} pendente{stats.pendingImplementation > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
                     Total de Tickets
                   </CardTitle>
                   <Ticket className="h-4 w-4 text-gray-500" />
@@ -162,7 +199,7 @@ const MinimalMasterDashboard = () => {
                 <CardTitle className="text-lg text-gray-900">Ações Rápidas</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Button 
                     variant="outline" 
                     onClick={() => setActiveTab('tickets')}
@@ -178,6 +215,14 @@ const MinimalMasterDashboard = () => {
                   >
                     <Building2 className="h-4 w-4 mr-2" />
                     Restaurantes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('implementation')}
+                    className="justify-start"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Implementação
                   </Button>
                   <Button 
                     variant="outline" 
@@ -202,6 +247,7 @@ const MinimalMasterDashboard = () => {
 
         {activeTab === 'tickets' && <MasterTicketsView />}
         {activeTab === 'restaurants' && <MasterRestaurantsView />}
+        {activeTab === 'implementation' && <ImplementationTicketsView />}
         {activeTab === 'staff' && <MasterStaffView />}
       </div>
     </div>
