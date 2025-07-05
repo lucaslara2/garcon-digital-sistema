@@ -67,21 +67,39 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
     setLoading(true);
     try {
       if (!loginInfo) {
-        toast({
-          title: "Erro",
-          description: "Informações de login não encontradas.",
-          variant: "destructive"
+        // Se não existe usuário para este restaurante, criar um
+        const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+          email: newEmail,
+          password: 'temp123456', // Senha temporária
+          email_confirm: true,
+          user_metadata: {
+            name: restaurant.name,
+            role: 'restaurant_owner'
+          }
         });
-        return;
+
+        if (signUpError) throw signUpError;
+
+        // Criar perfil do usuário
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: newUser.user.id,
+            name: restaurant.name,
+            role: 'restaurant_owner',
+            restaurant_id: restaurant.id
+          });
+
+        if (profileError) throw profileError;
+      } else {
+        // Usar a função do banco para atualizar e-mail
+        const { error } = await supabase.rpc('update_user_email', {
+          user_id: loginInfo.user_id,
+          new_email: newEmail
+        });
+
+        if (error) throw error;
       }
-
-      // Usar a função do banco para atualizar e-mail
-      const { error } = await supabase.rpc('update_user_email', {
-        user_id: loginInfo.user_id,
-        new_email: newEmail
-      });
-
-      if (error) throw error;
 
       // Atualizar também o e-mail do restaurante
       const { error: restaurantError } = await supabase
@@ -126,7 +144,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
       if (!loginInfo) {
         toast({
           title: "Erro",
-          description: "Informações de login não encontradas.",
+          description: "Primeiro configure o e-mail antes de definir a senha.",
           variant: "destructive"
         });
         return;
@@ -163,7 +181,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
     if (!loginInfo) {
       toast({
         title: "Erro",
-        description: "Informações de login não encontradas.",
+        description: "Configure primeiro as credenciais do restaurante.",
         variant: "destructive"
       });
       return;
@@ -240,7 +258,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
             <Mail className="h-4 w-4 text-gray-500" />
             <span className="text-sm font-medium">E-mail atual:</span>
           </div>
-          <span className="text-sm text-gray-600">{loginInfo?.email || restaurant.email}</span>
+          <span className="text-sm text-gray-600">{loginInfo?.email || restaurant.email || 'Não configurado'}</span>
         </div>
 
         {loginInfo && (
@@ -255,7 +273,7 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
 
         <Separator />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Ver Credenciais */}
           <Dialog open={isViewCredentialsOpen} onOpenChange={setIsViewCredentialsOpen}>
             <DialogTrigger asChild>
@@ -272,7 +290,15 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
                 <div>
                   <Label>E-mail de Login</Label>
                   <Input
-                    value={loginInfo?.email || restaurant.email}
+                    value={loginInfo?.email || restaurant.email || 'Não configurado'}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </div>
+                <div>
+                  <Label>Senha Padrão (se não alterada)</Label>
+                  <Input
+                    value="temp123456"
                     readOnly
                     className="bg-gray-50"
                   />
@@ -422,10 +448,10 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
           <Button 
             onClick={handleLoginAsRestaurant} 
             disabled={loading || !loginInfo}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 col-span-full"
           >
             <User className="h-4 w-4" />
-            {loading ? "Entrando..." : "Fazer Login"}
+            {loading ? "Entrando..." : "Fazer Login como Restaurante"}
           </Button>
         </div>
 
@@ -437,7 +463,8 @@ const RestaurantLoginManager: React.FC<RestaurantLoginManagerProps> = ({ restaur
               <li>Visualizar credenciais de acesso do restaurante</li>
               <li>Alterar e-mail de login do restaurante</li>
               <li>Definir nova senha de acesso</li>
-              <li>Fazer login direto como o restaurante</li>
+              <li>Fazer login direto como o restaurante com acesso total ao sistema</li>
+              <li>Gerenciar produtos, categorias, pedidos e todas as funcionalidades</li>
             </ul>
           </div>
         </div>
