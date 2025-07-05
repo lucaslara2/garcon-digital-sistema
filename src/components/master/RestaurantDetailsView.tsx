@@ -1,55 +1,36 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/AuthProvider';
+import { Separator } from '@/components/ui/separator';
 import { 
   Building2, 
   Mail, 
   Phone, 
+  MapPin, 
   Calendar, 
-  MapPin,
-  CreditCard,
-  Settings,
+  Clock,
   Users,
-  ShoppingCart,
+  CreditCard,
+  Ticket,
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Clock,
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Plus,
-  FileText,
-  Star,
-  DollarSign
+  Package,
+  ShoppingCart
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import RestaurantLoginManager from './RestaurantLoginManager';
 
 interface RestaurantDetailsViewProps {
   restaurantId: string;
-  onBack: () => void;
-  onNavigateToTab: (tabId: string, restaurantId?: string) => void;
 }
 
-const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({ 
-  restaurantId, 
-  onBack, 
-  onNavigateToTab 
-}) => {
-  const { userProfile } = useAuth();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Buscar dados do restaurante
-  const { data: restaurant, isLoading } = useQuery({
+const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({ restaurantId }) => {
+  const { data: restaurant, isLoading: loadingRestaurant } = useQuery({
     queryKey: ['restaurant-details', restaurantId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -63,133 +44,56 @@ const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({
     }
   });
 
-  // Buscar estatísticas do restaurante
   const { data: stats } = useQuery({
     queryKey: ['restaurant-stats', restaurantId],
     queryFn: async () => {
-      const [ordersResult, paymentsResult, clientsResult, productsResult] = await Promise.all([
+      const [ordersResult, usersResult, ticketsResult, productsResult] = await Promise.all([
         supabase.from('orders').select('id, total, status, created_at').eq('restaurant_id', restaurantId),
-        supabase.from('payments').select('id, amount, status').eq('restaurant_id', restaurantId),
-        supabase.from('clients').select('id, created_at').eq('restaurant_id', restaurantId),
-        supabase.from('products').select('id').eq('restaurant_id', restaurantId)
+        supabase.from('user_profiles').select('id, role, created_at').eq('restaurant_id', restaurantId),
+        supabase.from('tickets').select('id, status, category, created_at').eq('restaurant_id', restaurantId),
+        supabase.from('products').select('id, is_active').eq('restaurant_id', restaurantId)
       ]);
 
       const orders = ordersResult.data || [];
-      const payments = paymentsResult.data || [];
-      const clients = clientsResult.data || [];
+      const users = usersResult.data || [];
+      const tickets = ticketsResult.data || [];
       const products = productsResult.data || [];
 
-      const totalRevenue = payments
-        .filter(p => p.status === 'completed')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+      const totalRevenue = orders
+        .filter(o => o.status === 'delivered')
+        .reduce((sum, order) => sum + Number(order.total), 0);
 
-      const completedOrders = orders.filter(o => o.status === 'delivered').length;
-      const averageTicket = completedOrders > 0 ? totalRevenue / completedOrders : 0;
+      const last30Days = new Date();
+      last30Days.setDate(last30Days.getDate() - 30);
+
+      const recentOrders = orders.filter(o => new Date(o.created_at) >= last30Days);
+      const openTickets = tickets.filter(t => t.status === 'open');
+      const implementationTickets = tickets.filter(t => t.category === 'implementation');
 
       return {
         totalOrders: orders.length,
-        completedOrders,
         totalRevenue,
-        averageTicket,
-        activeClients: clients.length,
+        recentOrders: recentOrders.length,
+        totalUsers: users.length,
+        staffCount: users.filter(u => ['waiter', 'cashier', 'kitchen'].includes(u.role)).length,
+        openTickets: openTickets.length,
+        implementationTickets: implementationTickets.length,
+        activeProducts: products.filter(p => p.is_active).length,
         totalProducts: products.length
       };
     }
   });
 
-  // Buscar tickets de implementação
-  const { data: implementationTickets } = useQuery({
-    queryKey: ['restaurant-implementation-tickets', restaurantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .eq('category', 'implementation')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Buscar pedidos recentes
-  const { data: recentOrders } = useQuery({
-    queryKey: ['restaurant-recent-orders', restaurantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          client:clients(name, phone)
-        `)
-        .eq('restaurant_id', restaurantId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const createImplementationTicketMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('tickets')
-        .insert({
-          restaurant_id: restaurantId,
-          user_id: userProfile?.id,
-          title: `Implementação - ${restaurant?.name}`,
-          description: `Ticket de implementação criado para o restaurante ${restaurant?.name}.\n\nPlano: ${restaurant?.plan_type}\nEmail: ${restaurant?.email}\nTelefone: ${restaurant?.phone}`,
-          category: 'implementation',
-          priority: 'high',
-          status: 'open'
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['restaurant-implementation-tickets'] });
-      toast.success('Ticket de implementação criado!');
-    }
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-50 text-green-700 border-green-200';
-      case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'expired': return 'bg-red-50 text-red-700 border-red-200';
-      case 'blocked': return 'bg-gray-50 text-gray-700 border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'expired': return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'blocked': return <AlertCircle className="h-4 w-4 text-gray-500" />;
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getOrderStatusColor = (status: string) => {
-    switch (status) {
-      case 'delivered': return 'text-green-600';
-      case 'preparing': return 'text-blue-600';
-      case 'pending': return 'text-yellow-600';
-      case 'cancelled': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  if (isLoading) {
+  if (loadingRestaurant) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando detalhes do restaurante...</p>
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -198,402 +102,207 @@ const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({
   if (!restaurant) {
     return (
       <div className="text-center py-8">
-        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
-        <p className="text-gray-600">Restaurante não encontrado</p>
-        <Button onClick={onBack} className="mt-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
+        <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Restaurante não encontrado</h3>
+        <p className="text-gray-600">O restaurante solicitado não foi encontrado.</p>
       </div>
     );
   }
 
-  const hasImplementation = implementationTickets && implementationTickets.length > 0;
-  const hasOpenImplementation = implementationTickets?.some(t => t.status === 'open');
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'expired': return 'bg-red-500';
+      case 'blocked': return 'bg-gray-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'basic': return 'bg-blue-500';
+      case 'premium': return 'bg-purple-500';
+      case 'enterprise': return 'bg-orange-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{restaurant.name}</h1>
-            <p className="text-gray-600">Detalhes completos do restaurante</p>
+      {/* Header do Restaurante */}
+      <div className="bg-white p-6 rounded-lg border">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Building2 className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{restaurant.name}</h1>
+              <div className="flex items-center gap-3 mt-2">
+                <Badge className={`${getStatusColor(restaurant.status)} text-white`}>
+                  {restaurant.status}
+                </Badge>
+                <Badge className={`${getPlanColor(restaurant.plan_type)} text-white`}>
+                  {restaurant.plan_type}
+                </Badge>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {getStatusIcon(restaurant.status)}
-          <Badge className={getStatusColor(restaurant.status)}>
-            {restaurant.status === 'active' ? 'Ativo' :
-             restaurant.status === 'pending' ? 'Pendente' :
-             restaurant.status === 'expired' ? 'Expirado' : 'Bloqueado'}
-          </Badge>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Mail className="h-4 w-4" />
+              <span>{restaurant.email}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Phone className="h-4 w-4" />
+              <span>{restaurant.phone}</span>
+            </div>
+            {restaurant.address && (
+              <div className="flex items-center gap-2 text-gray-600">
+                <MapPin className="h-4 w-4" />
+                <span>{restaurant.address}</span>
+              </div>
+            )}
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="h-4 w-4" />
+              <span>Criado em {format(new Date(restaurant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>Plano expira em {format(new Date(restaurant.plan_expires_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Estatísticas Rápidas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pedidos</p>
-                <p className="text-2xl font-bold">{stats?.totalOrders || 0}</p>
-              </div>
-              <ShoppingCart className="h-8 w-8 text-blue-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Total de Pedidos
+            </CardTitle>
+            <ShoppingCart className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              {stats?.recentOrders || 0} nos últimos 30 dias
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Receita Total</p>
-                <p className="text-2xl font-bold">R$ {(stats?.totalRevenue || 0).toFixed(2)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Receita Total
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {(stats?.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Pedidos entregues
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Clientes</p>
-                <p className="text-2xl font-bold">{stats?.activeClients || 0}</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Equipe
+            </CardTitle>
+            <Users className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.staffCount || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              {stats?.totalUsers || 0} usuários total
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Ticket Médio</p>
-                <p className="text-2xl font-bold">R$ {(stats?.averageTicket || 0).toFixed(2)}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-orange-500" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Tickets Abertos
+            </CardTitle>
+            <Ticket className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.openTickets || 0}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              {stats?.implementationTickets || 0} implementação
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="orders">Pedidos</TabsTrigger>
-          <TabsTrigger value="implementation">Implementação</TabsTrigger>
-          <TabsTrigger value="actions">Ações</TabsTrigger>
-        </TabsList>
+      {/* Componente de Gerenciamento de Login */}
+      <RestaurantLoginManager restaurant={restaurant} />
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Informações Básicas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Informações Básicas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{restaurant.email}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Telefone</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{restaurant.phone}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">CNPJ</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <CreditCard className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{restaurant.cnpj}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Plano</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Star className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm capitalize">{restaurant.plan_type}</span>
-                    </div>
-                  </div>
-                </div>
-                {restaurant.address && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Endereço</label>
-                    <div className="flex items-start gap-2 mt-1">
-                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                      <span className="text-sm">{restaurant.address}</span>
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Expira em</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">
-                      {format(new Date(restaurant.plan_expires_at), 'dd/MM/yyyy', { locale: ptBR })}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Status de Implementação */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Status de Implementação
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {hasImplementation ? (
-                  <div className="space-y-3">
-                    {implementationTickets?.map((ticket) => (
-                      <div key={ticket.id} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{ticket.title}</span>
-                          <Badge className={
-                            ticket.status === 'open' ? 'bg-red-100 text-red-800' :
-                            ticket.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-green-100 text-green-800'
-                          }>
-                            {ticket.status === 'open' ? 'Pendente' :
-                             ticket.status === 'in_progress' ? 'Em Andamento' : 'Concluído'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{ticket.description}</p>
-                        <div className="text-xs text-gray-500">
-                          Criado em {format(new Date(ticket.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                        </div>
-                      </div>
-                    ))}
-                    <Button
-                      onClick={() => onNavigateToTab('implementation', restaurantId)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      Ver Todos os Tickets
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <Settings className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-600 mb-4">Nenhuma implementação registrada</p>
-                    <Button
-                      onClick={() => createImplementationTicketMutation.mutate()}
-                      disabled={createImplementationTicketMutation.isPending}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Ticket de Implementação
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pedidos Recentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentOrders && recentOrders.length > 0 ? (
-                <div className="space-y-3">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <div className="font-medium">
-                          Pedido #{order.id.slice(0, 8)}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {order.client?.name || order.customer_name || 'Cliente não identificado'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">R$ {order.total.toFixed(2)}</div>
-                        <div className={`text-sm ${getOrderStatusColor(order.status)}`}>
-                          {order.status === 'delivered' ? 'Entregue' :
-                           order.status === 'preparing' ? 'Preparando' :
-                           order.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>Nenhum pedido encontrado</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="implementation" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Implementação
-                {!hasImplementation && (
-                  <Button
-                    onClick={() => createImplementationTicketMutation.mutate()}
-                    disabled={createImplementationTicketMutation.isPending}
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Ticket
-                  </Button>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {hasImplementation ? (
-                <div className="space-y-4">
-                  {implementationTickets?.map((ticket) => (
-                    <div key={ticket.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-medium mb-1">{ticket.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{ticket.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>Prioridade: {ticket.priority}</span>
-                            <span>Criado: {format(new Date(ticket.created_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                          </div>
-                        </div>
-                        <Badge className={
-                          ticket.status === 'open' ? 'bg-red-100 text-red-800' :
-                          ticket.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }>
-                          {ticket.status === 'open' ? 'Pendente' :
-                           ticket.status === 'in_progress' ? 'Em Andamento' : 'Concluído'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    onClick={() => onNavigateToTab('implementation', restaurantId)}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    Gerenciar Implementação
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Settings className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-600 mb-4">
-                    Nenhum processo de implementação iniciado para este restaurante
-                  </p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Inicie um processo de implementação para acompanhar o progresso de configuração do restaurante
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="actions" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ações Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  onClick={() => onNavigateToTab('implementation', restaurantId)}
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                >
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Settings className="h-4 w-4" />
-                      <span className="font-medium">Implementação</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      Gerenciar processo de implementação
-                    </p>
-                  </div>
-                </Button>
-
-                <Button
-                  onClick={() => onNavigateToTab('tickets')}
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                >
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <FileText className="h-4 w-4" />
-                      <span className="font-medium">Tickets</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      Ver todos os tickets
-                    </p>
-                  </div>
-                </Button>
-
-                {!hasImplementation && (
-                  <Button
-                    onClick={() => createImplementationTicketMutation.mutate()}
-                    disabled={createImplementationTicketMutation.isPending}
-                    className="justify-start h-auto p-4"
-                  >
-                    <div className="text-left">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Plus className="h-4 w-4" />
-                        <span className="font-medium">Nova Implementação</span>
-                      </div>
-                      <p className="text-xs opacity-90">
-                        Iniciar processo de implementação
-                      </p>
-                    </div>
-                  </Button>
-                )}
-
-                <Button
-                  onClick={onBack}
-                  variant="outline"
-                  className="justify-start h-auto p-4"
-                >
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <ArrowLeft className="h-4 w-4" />
-                      <span className="font-medium">Voltar</span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      Retornar à lista de restaurantes
-                    </p>
-                  </div>
-                </Button>
+      {/* Informações Adicionais */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Produtos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Produtos Ativos:</span>
+                <span className="font-semibold">{stats?.activeProducts || 0}</span>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div className="flex justify-between">
+                <span>Total de Produtos:</span>
+                <span className="font-semibold">{stats?.totalProducts || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Informações do Plano
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Plano Atual:</span>
+                <Badge className={`${getPlanColor(restaurant.plan_type)} text-white`}>
+                  {restaurant.plan_type}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <Badge className={`${getStatusColor(restaurant.status)} text-white`}>
+                  {restaurant.status}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Expira em:</span>
+                <span className="text-sm">
+                  {format(new Date(restaurant.plan_expires_at), 'dd/MM/yyyy', { locale: ptBR })}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
