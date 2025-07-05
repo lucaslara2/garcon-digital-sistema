@@ -75,21 +75,21 @@ const ProductsManager = () => {
 
   if (productsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <LoadingSpinner size="lg" text="Carregando produtos..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header similar to POS */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-slate-900">
+      {/* Header */}
+      <div className="bg-slate-800 border-b border-slate-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Gestão de Produtos</h1>
-              <p className="text-gray-600">Gerencie produtos, categorias e estoque</p>
+              <h1 className="text-2xl font-bold text-white">Gestão de Produtos</h1>
+              <p className="text-slate-400">Gerencie produtos, categorias e estoque</p>
             </div>
             
             <div className="flex items-center space-x-3">
@@ -97,6 +97,7 @@ const ProductsManager = () => {
                 onClick={() => setCreateCategoryOpen(true)}
                 variant="outline"
                 size="sm"
+                className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Categoria
@@ -104,6 +105,7 @@ const ProductsManager = () => {
               <Button
                 onClick={() => setCreateProductOpen(true)}
                 size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Produto
@@ -118,18 +120,18 @@ const ProductsManager = () => {
         <ProductStats products={products} categories={categories} />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
-          {/* Products Grid - Similar to POS ProductGrid */}
+          {/* Products Grid */}
           <div className="lg:col-span-8">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
-              <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-sm h-full flex flex-col">
+              <div className="p-4 border-b border-slate-700 bg-slate-750 rounded-t-lg">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <h2 className="text-lg font-semibold text-white flex items-center">
                     <div className="bg-blue-600 p-2 rounded-lg mr-3">
                       <Package className="h-4 w-4 text-white" />
                     </div>
                     Produtos
                   </h2>
-                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 border-gray-200">
+                  <Badge variant="secondary" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
                     {filteredProducts?.length || 0} itens
                   </Badge>
                 </div>
@@ -137,15 +139,19 @@ const ProductsManager = () => {
                 {/* Search and Filters */}
                 <div className="flex items-center space-x-4">
                   <div className="relative flex-1">
-                    <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                     <Input
                       placeholder="Buscar produtos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm bg-white border-gray-300"
+                      className="pl-10 h-9 text-sm bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
-                  <Button variant="outline" size="sm" className="border-gray-300 hover:bg-gray-50">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+                  >
                     <Filter className="h-4 w-4 mr-2" />
                     Filtros
                   </Button>
@@ -155,6 +161,10 @@ const ProductsManager = () => {
                       variant={viewMode === 'grid' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
+                      className={viewMode === 'grid' 
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                        : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                      }
                     >
                       <Grid3X3 className="h-4 w-4" />
                     </Button>
@@ -162,6 +172,10 @@ const ProductsManager = () => {
                       variant={viewMode === 'list' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setViewMode('list')}
+                      className={viewMode === 'list' 
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                        : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                      }
                     >
                       <List className="h-4 w-4" />
                     </Button>
@@ -171,10 +185,10 @@ const ProductsManager = () => {
 
               <div className="flex-1 overflow-y-auto p-4">
                 {filteredProducts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                    <Package className="h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium mb-2 text-gray-900">Nenhum produto encontrado</h3>
-                    <p className="text-sm text-center max-w-xs">
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+                    <Package className="h-12 w-12 text-slate-600 mb-4" />
+                    <h3 className="text-lg font-medium mb-2 text-slate-400">Nenhum produto encontrado</h3>
+                    <p className="text-sm text-center max-w-xs text-slate-500">
                       Comece criando seu primeiro produto!
                     </p>
                   </div>
@@ -183,7 +197,7 @@ const ProductsManager = () => {
                     {filteredProducts.map((product) => (
                       <div
                         key={product.id}
-                        className={`bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors ${
+                        className={`bg-slate-750 border border-slate-600 rounded-lg p-3 hover:bg-slate-700 transition-colors ${
                           viewMode === 'list' ? 'flex items-center space-x-4' : 'flex flex-col'
                         }`}
                       >
@@ -196,8 +210,8 @@ const ProductsManager = () => {
                               className="w-full h-full object-cover rounded"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
-                              <ImageIcon className="h-6 w-6 text-gray-400" />
+                            <div className="w-full h-full bg-slate-700 rounded flex items-center justify-center">
+                              <ImageIcon className="h-6 w-6 text-slate-500" />
                             </div>
                           )}
                         </div>
@@ -206,22 +220,21 @@ const ProductsManager = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
+                              <h3 className="font-medium text-white truncate">{product.name}</h3>
                               {product.description && (
-                                <p className="text-gray-500 text-sm truncate mt-1">
+                                <p className="text-slate-400 text-sm truncate mt-1">
                                   {product.description}
                                 </p>
                               )}
                               
                               <div className="flex items-center space-x-2 mt-2">
                                 {product.category && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
                                     {product.category.name}
                                   </Badge>
                                 )}
                                 <Badge 
-                                  className={product.is_active ? 'bg-green-600' : 'bg-red-600'} 
-                                  variant="secondary"
+                                  className={`text-xs ${product.is_active ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
                                 >
                                   {product.is_active ? 'Ativo' : 'Inativo'}
                                 </Badge>
@@ -229,11 +242,11 @@ const ProductsManager = () => {
                             </div>
 
                             <div className="text-right ml-2">
-                              <div className="flex items-center text-green-600 font-bold">
+                              <div className="flex items-center text-green-400 font-bold">
                                 <DollarSign className="h-4 w-4 mr-1" />
                                 {product.price.toFixed(2)}
                               </div>
-                              <div className="flex items-center text-gray-500 text-sm mt-1">
+                              <div className="flex items-center text-slate-400 text-sm mt-1">
                                 <Package className="h-3 w-3 mr-1" />
                                 {product.inventory?.[0]?.current_stock || 0}
                               </div>
@@ -245,7 +258,7 @@ const ProductsManager = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1 text-xs"
+                              className="flex-1 text-xs bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
                             >
                               <Edit className="h-3 w-3 mr-1" />
                               Editar
@@ -253,7 +266,7 @@ const ProductsManager = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="bg-red-600 border-red-500 text-white hover:bg-red-700"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -267,11 +280,11 @@ const ProductsManager = () => {
             </div>
           </div>
 
-          {/* Categories Panel - Similar to POS Cart */}
+          {/* Categories Panel */}
           <div className="lg:col-span-4">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
-              <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-sm h-full flex flex-col">
+              <div className="p-4 border-b border-slate-700 bg-slate-750 rounded-t-lg">
+                <h2 className="text-lg font-semibold text-white flex items-center">
                   <div className="bg-green-600 p-2 rounded-lg mr-3">
                     <Grid3X3 className="h-4 w-4 text-white" />
                   </div>
@@ -280,10 +293,10 @@ const ProductsManager = () => {
               </div>
 
               {categories.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-16 text-gray-400">
-                  <Grid3X3 className="h-12 w-12 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium mb-2 text-gray-600">Nenhuma categoria</h3>
-                  <p className="text-sm text-center max-w-xs">
+                <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-500">
+                  <Grid3X3 className="h-12 w-12 text-slate-600 mb-4" />
+                  <h3 className="text-lg font-medium mb-2 text-slate-400">Nenhuma categoria</h3>
+                  <p className="text-sm text-center max-w-xs text-slate-500">
                     Crie categorias para organizar seus produtos
                   </p>
                 </div>
@@ -293,19 +306,25 @@ const ProductsManager = () => {
                     {categories.map((category) => (
                       <div 
                         key={category.id} 
-                        className="bg-gray-50 p-3 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer"
+                        className={`bg-slate-750 p-3 rounded-lg border border-slate-600 hover:bg-slate-700 transition-colors cursor-pointer ${
+                          selectedCategory === category.id ? 'border-amber-500 bg-slate-700' : ''
+                        }`}
                         onClick={() => setSelectedCategory(selectedCategory === category.id ? '' : category.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">{category.name}</h4>
+                            <h4 className="font-medium text-white">{category.name}</h4>
                             {category.description && (
-                              <p className="text-xs text-gray-500 mt-1">{category.description}</p>
+                              <p className="text-xs text-slate-400 mt-1">{category.description}</p>
                             )}
                           </div>
                           <Badge 
                             variant="secondary" 
-                            className={`text-xs ${selectedCategory === category.id ? 'bg-blue-100 text-blue-800' : ''}`}
+                            className={`text-xs ${
+                              selectedCategory === category.id 
+                                ? 'bg-amber-600 text-white' 
+                                : 'bg-slate-700 text-slate-300 border-slate-600'
+                            }`}
                           >
                             {products.filter(p => p.category_id === category.id).length}
                           </Badge>
