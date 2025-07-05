@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +41,7 @@ interface ActiveOrdersProps {
 export function ActiveOrders({ onOrderSelect, selectedOrderId, filterStatus }: ActiveOrdersProps) {
   const { userProfile } = useAuth();
 
-  const getStatusFilter = () => {
+  const getStatusFilter = (): OrderStatus[] => {
     if (filterStatus === 'pending') return ['pending'];
     if (filterStatus === 'preparing') return ['preparing'];
     if (filterStatus === 'ready') return ['ready'];
