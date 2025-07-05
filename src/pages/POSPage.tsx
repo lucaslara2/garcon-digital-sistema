@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import { POSSystem } from '@/components/pos/POSSystem';
+import POSSystem from '@/components/pos/POSSystem';
 
 const POSPage = () => {
   return (

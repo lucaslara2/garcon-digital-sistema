@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import { KitchenDisplay } from '@/components/kitchen/KitchenDisplay';
+import KitchenDisplay from '@/components/kitchen/KitchenDisplay';
 
 const KitchenPage = () => {
   return (
