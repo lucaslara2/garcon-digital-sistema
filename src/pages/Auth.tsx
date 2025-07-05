@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { ChefHat, Mail, Lock, User } from 'lucide-react';
+import { ChefHat, Mail, Lock, User, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, createMasterUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
@@ -52,6 +52,18 @@ const Auth = () => {
     } else {
       toast.success('Conta criada com sucesso! Verifique seu email.');
       navigate('/dashboard');
+    }
+    setLoading(false);
+  };
+
+  const handleCreateMaster = async () => {
+    setLoading(true);
+    const { error } = await createMasterUser();
+    
+    if (error) {
+      toast.error('Erro ao criar usuário master: ' + error.message);
+    } else {
+      toast.success('Usuário master criado! Faça login com master@admin.com / master123');
     }
     setLoading(false);
   };
@@ -121,6 +133,22 @@ const Auth = () => {
                   disabled={loading}
                 >
                   {loading ? 'Entrando...' : 'Entrar'}
+                </Button>
+
+                <div className="text-center text-sm text-slate-400 mt-4">
+                  Para acessar como Master Admin:
+                  <br />
+                  Email: master@admin.com | Senha: master123
+                </div>
+
+                <Button 
+                  type="button"
+                  onClick={handleCreateMaster}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold mt-2"
+                  disabled={loading}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  {loading ? 'Criando...' : 'Criar Usuário Master'}
                 </Button>
               </form>
             </TabsContent>

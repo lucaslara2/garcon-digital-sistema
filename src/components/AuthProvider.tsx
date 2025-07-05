@@ -14,6 +14,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name: string, role?: UserRole) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  createMasterUser: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,6 +83,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  const createMasterUser = async () => {
+    const { error } = await supabase.auth.signUp({
+      email: 'master@admin.com',
+      password: 'master123',
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: {
+          name: 'Master Admin',
+          role: 'admin'
+        }
+      }
+    });
+
+    if (!error) {
+      // Atualizar o perfil existente com o ID correto
+      const { data: authUser } = await supabase.auth.getUser();
+      if (authUser.user) {
+        await supabase
+          .from('user_profiles')
+          .update({ id: authUser.user.id })
+          .eq('id', '00000000-0000-0000-0000-000000000001');
+      }
+    }
+
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -94,7 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       signIn,
       signUp,
-      signOut
+      signOut,
+      createMasterUser
     }}>
       {children}
     </AuthContext.Provider>
