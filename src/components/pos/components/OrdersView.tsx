@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,9 +32,9 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
 
-  // Buscar pedidos por status
-  const { data: pendingOrders } = useQuery({
-    queryKey: ['orders', 'pending', userProfile?.restaurant_id],
+  // Buscar todos os pedidos ativos
+  const { data: allOrders } = useQuery({
+    queryKey: ['pos-orders', userProfile?.restaurant_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
@@ -49,10 +48,11 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
               product_addons(name, price)
             )
           ),
-          payments(payment_method, status)
+          payments(payment_method, status),
+          restaurant_tables(table_number)
         `)
         .eq('restaurant_id', userProfile?.restaurant_id)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'preparing', 'ready'])
         .order('created_at', { ascending: true });
       
       if (error) throw error;
@@ -62,63 +62,11 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
     refetchInterval: 5000
   });
 
-  const { data: preparingOrders } = useQuery({
-    queryKey: ['orders', 'preparing', userProfile?.restaurant_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items(
-            *,
-            products(name, price),
-            order_item_addons(
-              *,
-              product_addons(name, price)
-            )
-          ),
-          payments(payment_method, status)
-        `)
-        .eq('restaurant_id', userProfile?.restaurant_id)
-        .eq('status', 'preparing')
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!userProfile?.restaurant_id,
-    refetchInterval: 5000
-  });
+  // Filtrar pedidos por status
+  const pendingOrders = allOrders?.filter(order => order.status === 'pending') || [];
+  const preparingOrders = allOrders?.filter(order => order.status === 'preparing') || [];
+  const readyOrders = allOrders?.filter(order => order.status === 'ready') || [];
 
-  const { data: readyOrders } = useQuery({
-    queryKey: ['orders', 'ready', userProfile?.restaurant_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items(
-            *,
-            products(name, price),
-            order_item_addons(
-              *,
-              product_addons(name, price)
-            )
-          ),
-          payments(payment_method, status)
-        `)
-        .eq('restaurant_id', userProfile?.restaurant_id)
-        .eq('status', 'ready')
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!userProfile?.restaurant_id,
-    refetchInterval: 5000
-  });
-
-  // Atualizar status do pedido
   const updateOrderStatus = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: OrderStatus }) => {
       const { error } = await supabase
@@ -132,7 +80,7 @@ export function OrdersView({ selectedOrder, onOrderSelect }: OrdersViewProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pos-orders'] });
       toast.success('Status do pedido atualizado!');
     },
     onError: (error: any) => {
@@ -241,7 +189,12 @@ ${order.delivery_instructions || ''}
   };
 
   const OrderCard = ({ order, actions }: { order: any; actions: React.ReactNode }) => (
-    <Card className="mb-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onOrderSelect(order)}>
+    <Card 
+      className={`mb-4 hover:shadow-md transition-shadow cursor-pointer ${
+        selectedOrder?.id === order.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+      }`} 
+      onClick={() => onOrderSelect(order)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -280,13 +233,16 @@ ${order.delivery_instructions || ''}
             </div>
           </div>
 
-          {/* Endereço */}
-          {order.delivery_address && (
-            <div className="flex items-start space-x-2 text-sm">
-              <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-              <span className="text-gray-600">{order.delivery_address}</span>
-            </div>
-          )}
+          {/* Mesa/Local */}
+          <div className="flex items-start space-x-2 text-sm">
+            <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+            <span className="text-gray-600">
+              {order.restaurant_tables?.table_number 
+                ? `Mesa ${order.restaurant_tables.table_number}`
+                : order.delivery_address || 'Balcão'
+              }
+            </span>
+          </div>
 
           {/* Itens do Pedido */}
           <div className="space-y-2">
@@ -473,6 +429,70 @@ ${order.delivery_instructions || ''}
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Seção de Comandas Individuais */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Comandas Individuais</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {allOrders?.map(order => (
+            <Card 
+              key={order.id} 
+              className={`cursor-pointer hover:shadow-lg transition-all ${
+                selectedOrder?.id === order.id 
+                  ? 'ring-2 ring-blue-500 bg-blue-50 shadow-lg' 
+                  : 'hover:shadow-md'
+              }`}
+              onClick={() => onOrderSelect(order)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Badge className={`text-xs ${getStatusColor(order.status)}`}>
+                    {getStatusText(order.status)}
+                  </Badge>
+                  <span className="text-sm font-bold">#{order.id.slice(-8)}</span>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm">
+                    <User className="h-3 w-3 text-gray-400 mr-1" />
+                    <span className="font-medium truncate">{order.customer_name}</span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-gray-600">
+                    <MapPin className="h-3 w-3 text-gray-400 mr-1" />
+                    <span className="truncate">
+                      {order.restaurant_tables?.table_number 
+                        ? `Mesa ${order.restaurant_tables.table_number}`
+                        : 'Balcão'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">{order.order_items.length} itens</span>
+                    <span className="font-bold text-green-600">R$ {order.total.toFixed(2)}</span>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    {formatTimeAgo(order.created_at)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        {allOrders?.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Nenhuma comanda ativa</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
