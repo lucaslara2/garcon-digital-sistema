@@ -11,7 +11,7 @@ import { PaymentSection } from './PaymentSection';
 import { ActiveOrders } from './ActiveOrders';
 import { OrderTicket } from './OrderTicket';
 import { Button } from '@/components/ui/button';
-import { Store, ShoppingCart, Receipt, Clock, ChefHat, FileText, Plus } from 'lucide-react';
+import { Store, ShoppingCart, Receipt, Clock, ChefHat, FileText, Plus, CircleDot } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PaymentMethod = Database['public']['Enums']['payment_method'];
@@ -231,76 +231,112 @@ const POSSystem = () => {
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Menu items configuration
+  const menuItems = [
+    {
+      id: 'new-order',
+      label: 'Novo Pedido',
+      icon: Plus,
+      color: 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500',
+      activeColor: 'bg-emerald-600 shadow-lg shadow-emerald-500/25'
+    },
+    {
+      id: 'pending',
+      label: 'Pendentes',
+      icon: Clock,
+      color: 'bg-amber-600 hover:bg-amber-700 border-amber-500',
+      activeColor: 'bg-amber-600 shadow-lg shadow-amber-500/25'
+    },
+    {
+      id: 'preparing',
+      label: 'Em Preparo',
+      icon: ChefHat,
+      color: 'bg-blue-600 hover:bg-blue-700 border-blue-500',
+      activeColor: 'bg-blue-600 shadow-lg shadow-blue-500/25'
+    },
+    {
+      id: 'tickets',
+      label: 'Comandas',
+      icon: FileText,
+      color: 'bg-green-600 hover:bg-green-700 border-green-500',
+      activeColor: 'bg-green-600 shadow-lg shadow-green-500/25'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <div className="bg-slate-900 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-amber-500 p-2 rounded-lg">
-                <Store className="h-5 w-5 text-white" />
+            {/* Brand Section */}
+            <div className="flex items-center space-x-4">
+              <div className="bg-gradient-to-br from-amber-400 to-amber-600 p-3 rounded-xl shadow-lg">
+                <Store className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-white">Sistema PDV</h1>
-                <p className="text-xs text-slate-400">{userProfile.name}</p>
+                <h1 className="text-xl font-bold text-white tracking-tight">Sistema PDV</h1>
+                <p className="text-sm text-slate-400 font-medium">{userProfile.name}</p>
               </div>
             </div>
             
-            {/* Menu de Navegação */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={activeView === 'new-order' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('new-order')}
-                className={`${activeView === 'new-order' ? 'bg-amber-600 hover:bg-amber-700' : 'border-slate-600 hover:bg-slate-800'}`}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Pedido
-              </Button>
-              
-              <Button
-                variant={activeView === 'pending' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('pending')}
-                className={`${activeView === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-slate-600 hover:bg-slate-800'}`}
-              >
-                <Clock className="h-4 w-4 mr-1" />
-                Pendentes
-              </Button>
-              
-              <Button
-                variant={activeView === 'preparing' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('preparing')}
-                className={`${activeView === 'preparing' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:bg-slate-800'}`}
-              >
-                <ChefHat className="h-4 w-4 mr-1" />
-                Em Preparo
-              </Button>
-              
-              <Button
-                variant={activeView === 'tickets' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveView('tickets')}
-                className={`${activeView === 'tickets' ? 'bg-green-600 hover:bg-green-700' : 'border-slate-600 hover:bg-slate-800'}`}
-              >
-                <FileText className="h-4 w-4 mr-1" />
-                Comandas
-              </Button>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="bg-slate-800 px-3 py-1.5 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <ShoppingCart className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm text-white">{totalItems} itens</span>
+            {/* Navigation Menu */}
+            <div className="flex items-center space-x-3">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-1.5 border border-slate-700/50">
+                <div className="flex items-center space-x-1">
+                  {menuItems.map((item) => {
+                    const isActive = activeView === item.id;
+                    const Icon = item.icon;
+                    
+                    return (
+                      <Button
+                        key={item.id}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveView(item.id as any)}
+                        className={`
+                          relative px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 
+                          ${isActive 
+                            ? `${item.activeColor} text-white border border-opacity-50` 
+                            : `${item.color} text-white/90 hover:text-white border border-transparent hover:border-opacity-50`
+                          }
+                        `}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.label}
+                        {isActive && (
+                          <div className="absolute inset-0 bg-white/10 rounded-lg animate-pulse" />
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="bg-amber-900/30 px-3 py-1.5 rounded-lg border border-amber-500/30">
-                <div className="flex items-center space-x-2">
-                  <Receipt className="h-4 w-4 text-amber-400" />
-                  <span className="text-sm font-semibold text-amber-400">R$ {getTotal().toFixed(2)}</span>
+            </div>
+
+            {/* Status Indicators */}
+            <div className="flex items-center space-x-4">
+              {/* Cart Summary */}
+              <div className="bg-slate-800/60 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-slate-700/50">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="relative">
+                      <ShoppingCart className="h-5 w-5 text-slate-300" />
+                      {totalItems > 0 && (
+                        <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                          {totalItems}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm text-slate-300 font-medium">{totalItems} itens</span>
+                  </div>
+                  
+                  <div className="w-px h-6 bg-slate-600"></div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Receipt className="h-5 w-5 text-amber-400" />
+                    <span className="text-sm font-bold text-amber-400">R$ {getTotal().toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -308,8 +344,8 @@ const POSSystem = () => {
         </div>
       </div>
 
-      {/* Layout Principal */}
-      <div className="max-w-7xl mx-auto p-4">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6">
         {activeView === 'new-order' && (
           <div className="grid grid-cols-12 gap-4 min-h-[calc(100vh-100px)]">
             {/* Produtos */}
