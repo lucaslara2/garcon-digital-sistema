@@ -9,7 +9,7 @@ import { TrendingUp, DollarSign, ShoppingBag, Users } from 'lucide-react';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-export function ReportsView() {
+function ReportsView() {
   const { userProfile } = useAuth();
 
   const { data: salesData } = useQuery({
@@ -166,3 +166,5 @@ export function ReportsView() {
     </div>
   );
 }
+
+export default ReportsView;
