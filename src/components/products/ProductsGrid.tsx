@@ -1,155 +1,253 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   Edit, 
   Trash2, 
-  Package, 
   DollarSign,
-  ImageIcon,
-  Star,
+  TrendingUp,
+  Package,
   Eye
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
+import { toast } from 'sonner';
 
 interface ProductsGridProps {
-  products: any[];
+  selectedCategory: string;
+  onEditProduct: (product: any) => void;
 }
 
-const ProductsGrid = ({ products }: ProductsGridProps) => {
-  const getStockStatus = (product: any) => {
-    const inventory = product.inventory?.[0];
-    if (!inventory) return { color: 'bg-slate-500', text: 'N/A' };
-    
-    const { current_stock, min_stock } = inventory;
-    
-    if (current_stock <= 0) {
-      return { color: 'bg-red-500', text: 'Sem estoque' };
-    } else if (current_stock <= min_stock) {
-      return { color: 'bg-orange-500', text: 'Baixo' };
-    } else {
-      return { color: 'bg-green-500', text: 'OK' };
+const ProductsGrid = ({ selectedCategory, onEditProduct }: ProductsGridProps) => {
+  const { userProfile } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products', userProfile?.restaurant_id, selectedCategory],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          category:product_categories(name),
+          inventory(current_stock, min_stock, max_stock),
+          product_observation_assignments(
+            product_observations(name, description)
+          )
+        `)
+        .eq('restaurant_id', userProfile?.restaurant_id);
+
+      if (selectedCategory) {
+        query = query.eq('category_id', selectedCategory);
+      }
+
+      const { data, error } = await query.order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userProfile?.restaurant_id
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Produto excluído com sucesso!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao excluir produto: ' + error.message);
     }
+  });
+
+  const calculateProfit = (salePrice: number, costPrice: number) => {
+    if (!costPrice || costPrice === 0) return { amount: 0, percentage: 0 };
+    const profit = salePrice - costPrice;
+    const percentage = (profit / costPrice) * 100;
+    return { amount: profit, percentage };
   };
 
   if (products.length === 0) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="text-center py-12">
-          <Package className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">Nenhum produto encontrado</h3>
-          <p className="text-slate-400">Comece criando seu primeiro produto!</p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h4 className="text-xl font-medium text-gray-700 mb-2">Nenhum produto encontrado</h4>
+        <p className="text-gray-500">
+          {selectedCategory ? 'Nenhum produto nesta categoria' : 'Comece criando seu primeiro produto'}
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {products.map((product) => {
-        const stockStatus = getStockStatus(product);
-        
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {products.map((product, index) => {
+        const profit = calculateProfit(product.price, product.cost_price || 0);
+        const stockLevel = product.inventory?.[0]?.current_stock || 0;
+        const minStock = product.inventory?.[0]?.min_stock || 0;
+        const isLowStock = stockLevel <= minStock;
+
         return (
-          <Card key={product.id} className="bg-slate-800 border-slate-700 hover:bg-slate-750 transition-colors group">
-            <CardContent className="p-0">
-              {/* Product Image */}
-              <div className="relative aspect-square bg-slate-700 rounded-t-lg overflow-hidden">
-                {product.image_url ? (
+          <Card 
+            key={product.id} 
+            className="bg-white border-gray-200 hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 animate-fade-in"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CardContent className="p-6">
+              {product.image_url && (
+                <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-gray-100">
                   <img
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    className="w-full h-full object-cover"
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-slate-500" />
-                  </div>
-                )}
-                
-                {/* Status Badge */}
-                <div className="absolute top-3 right-3">
-                  <Badge className={`${stockStatus.color} text-white text-xs`}>
-                    {stockStatus.text}
-                  </Badge>
                 </div>
+              )}
 
-                {/* Active Status */}
-                {!product.is_active && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="destructive">Inativo</Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className="p-4 space-y-3">
-                <div>
-                  <h3 className="font-semibold text-white line-clamp-1">{product.name}</h3>
-                  {product.description && (
-                    <p className="text-slate-400 text-sm line-clamp-2 mt-1">
-                      {product.description}
-                    </p>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold text-gray-900 text-lg">{product.name}</h3>
+                  {isLowStock && (
+                    <Badge variant="destructive" className="text-xs">
+                      Estoque Baixo
+                    </Badge>
                   )}
                 </div>
 
-                {/* Category and Price */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    {product.category && (
-                      <Badge variant="secondary" className="bg-slate-700 text-slate-300 text-xs">
-                        {product.category.name}
-                      </Badge>
-                    )}
-                    <div className="flex items-center text-green-400 font-bold">
+                {product.description && (
+                  <p className="text-gray-600 text-sm line-clamp-2">{product.description}</p>
+                )}
+
+                {product.category && (
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {product.category.name}
+                  </Badge>
+                )}
+
+                {/* Preços e Lucro */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Preço de Venda:</span>
+                    <div className="flex items-center text-green-600 font-bold">
                       <DollarSign className="h-4 w-4 mr-1" />
-                      {product.price.toFixed(2)}
+                      R$ {product.price.toFixed(2)}
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="flex items-center text-amber-400 text-sm">
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      <span>4.5</span>
-                    </div>
-                    <div className="flex items-center text-slate-400 text-xs mt-1">
-                      <Package className="h-3 w-3 mr-1" />
-                      {product.inventory?.[0]?.current_stock || 0}
-                    </div>
-                  </div>
+                  {product.cost_price > 0 && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Preço de Custo:</span>
+                        <span className="text-red-600 font-medium">
+                          R$ {product.cost_price.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Lucro Líquido:</span>
+                        <div className="flex items-center text-green-600 font-bold">
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                          R$ {profit.amount.toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Margem:</span>
+                        <Badge 
+                          className={`${
+                            profit.percentage >= 50 
+                              ? 'bg-green-100 text-green-800 border-green-200' 
+                              : profit.percentage >= 25
+                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              : 'bg-red-100 text-red-800 border-red-200'
+                          }`}
+                        >
+                          {profit.percentage.toFixed(1)}%
+                        </Badge>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Addons Info */}
-                {product.product_addons?.length > 0 && (
-                  <div className="text-amber-400 text-xs">
-                    +{product.product_addons.length} adicional(is)
+                {/* Estoque */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div className="flex items-center text-gray-600">
+                    <Package className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Estoque: {stockLevel}</span>
+                  </div>
+                  
+                  <Badge 
+                    className={`text-xs ${
+                      stockLevel > minStock 
+                        ? 'bg-green-100 text-green-800 border-green-200'
+                        : 'bg-red-100 text-red-800 border-red-200'
+                    }`}
+                  >
+                    {stockLevel > minStock ? 'OK' : 'Baixo'}
+                  </Badge>
+                </div>
+
+                {/* Observações */}
+                {product.product_observation_assignments?.length > 0 && (
+                  <div className="pt-2 border-t border-gray-100">
+                    <div className="flex items-center mb-2">
+                      <Eye className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="text-sm text-gray-600">Observações:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {product.product_observation_assignments.map((assignment: any) => (
+                        <Badge 
+                          key={assignment.product_observations.name}
+                          variant="outline" 
+                          className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200"
+                        >
+                          {assignment.product_observations.name}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex space-x-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+                {/* Ações */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                  <Badge 
+                    className={`text-xs ${
+                      product.is_active 
+                        ? 'bg-green-100 text-green-800 border-green-200'
+                        : 'bg-gray-100 text-gray-600 border-gray-200'
+                    }`}
                   >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Ver
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="bg-red-600 border-red-500 text-white hover:bg-red-700"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                    {product.is_active ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onEditProduct(product)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-300 bg-white border-gray-300 hover:shadow-sm transform hover:scale-105 transition-all duration-200"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteProductMutation.mutate(product.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 bg-white border-gray-300 hover:shadow-sm transform hover:scale-105 transition-all duration-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>

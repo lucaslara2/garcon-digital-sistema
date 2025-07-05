@@ -1,80 +1,136 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Grid3X3, Package } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Edit, Trash2, Tag, Package } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
+import { toast } from 'sonner';
 
 interface CategoriesGridProps {
-  categories: any[];
+  onEditCategory: (category: any) => void;
 }
 
-const CategoriesGrid = ({ categories }: CategoriesGridProps) => {
+const CategoriesGrid = ({ onEditCategory }: CategoriesGridProps) => {
+  const { userProfile } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories', userProfile?.restaurant_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select(`
+          *,
+          products(count)
+        `)
+        .eq('restaurant_id', userProfile?.restaurant_id)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userProfile?.restaurant_id
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const { error } = await supabase
+        .from('product_categories')
+        .delete()
+        .eq('id', categoryId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Categoria excluída com sucesso!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao excluir categoria: ' + error.message);
+    }
+  });
+
   if (categories.length === 0) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="text-center py-12">
-          <Grid3X3 className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">Nenhuma categoria encontrada</h3>
-          <p className="text-slate-400">Crie categorias para organizar seus produtos!</p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <Tag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h4 className="text-xl font-medium text-gray-700 mb-2">Nenhuma categoria criada</h4>
+        <p className="text-gray-500">Organize seus produtos criando categorias</p>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
-      <CardHeader>
-        <CardTitle className="text-white">Categorias de Produtos</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((category) => (
-            <Card key={category.id} className="bg-slate-700 border-slate-600">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-white">{category.name}</h3>
-                    {category.description && (
-                      <p className="text-slate-400 text-sm mt-1 line-clamp-2">
-                        {category.description}
-                      </p>
-                    )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {categories.map((category, index) => (
+        <Card 
+          key={category.id} 
+          className="bg-white border-gray-200 hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 animate-fade-in"
+          style={{ animationDelay: `${index * 0.1}s` }}
+        >
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-600 p-2 rounded-lg">
+                    <Tag className="h-5 w-5 text-white" />
                   </div>
-                  <Badge className="bg-amber-600 text-white text-xs ml-2">
-                    #{category.display_order}
-                  </Badge>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 text-lg">{category.name}</h3>
+                    <p className="text-sm text-gray-500">Ordem: {category.display_order}</p>
+                  </div>
                 </div>
+                
+                <Badge 
+                  className={`text-xs ${
+                    category.is_active 
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : 'bg-gray-100 text-gray-600 border-gray-200'
+                  }`}
+                >
+                  {category.is_active ? 'Ativa' : 'Inativa'}
+                </Badge>
+              </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-600">
-                  <div className="flex items-center text-slate-400 text-sm">
-                    <Package className="h-4 w-4 mr-1" />
-                    <span>Produtos</span>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-slate-600 border-slate-500 text-slate-300 hover:bg-slate-500"
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="bg-red-600 border-red-500 text-white hover:bg-red-700"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+              {category.description && (
+                <p className="text-gray-600 text-sm">{category.description}</p>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="flex items-center text-gray-600">
+                  <Package className="h-4 w-4 mr-2" />
+                  <span className="text-sm">
+                    {category.products?.length || 0} produtos
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+                
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEditCategory(category)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-300 bg-white border-gray-300 hover:shadow-sm transform hover:scale-105 transition-all duration-200"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => deleteCategoryMutation.mutate(category.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 bg-white border-gray-300 hover:shadow-sm transform hover:scale-105 transition-all duration-200"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

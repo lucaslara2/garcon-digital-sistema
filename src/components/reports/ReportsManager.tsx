@@ -1,348 +1,400 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   BarChart3, 
   TrendingUp, 
   DollarSign, 
-  ShoppingCart,
-  Download,
-  Calendar,
+  Package, 
   Users,
-  Clock
+  Calendar,
+  Download,
+  Eye
 } from 'lucide-react';
-import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { useAuth } from '@/components/AuthProvider';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const ReportsManager = () => {
   const { userProfile } = useAuth();
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
+  const [dateRange, setDateRange] = useState('today');
+  const [reportType, setReportType] = useState('sales');
 
-  // Sales Overview
-  const { data: salesOverview } = useQuery({
-    queryKey: ['sales-overview', userProfile?.restaurant_id, dateRange],
+  const getDateRange = (range: string) => {
+    const today = new Date();
+    switch (range) {
+      case 'today':
+        return {
+          start: startOfDay(today),
+          end: endOfDay(today)
+        };
+      case 'yesterday':
+        const yesterday = subDays(today, 1);
+        return {
+          start: startOfDay(yesterday),
+          end: endOfDay(yesterday)
+        };
+      case 'week':
+        return {
+          start: startOfDay(subDays(today, 7)),
+          end: endOfDay(today)
+        };
+      case 'month':
+        return {
+          start: startOfDay(subDays(today, 30)),
+          end: endOfDay(today)
+        };
+      default:
+        return {
+          start: startOfDay(today),
+          end: endOfDay(today)
+        };
+    }
+  };
+
+  const { start: startDate, end: endDate } = getDateRange(dateRange);
+
+  // Relatório de Vendas
+  const { data: salesData } = useQuery({
+    queryKey: ['sales-report', userProfile?.restaurant_id, dateRange],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          id,
-          total,
-          created_at,
-          status,
-          order_type,
-          payments(payment_method, amount)
+          *,
+          order_items(quantity, total_price),
+          payments(amount, payment_method, status)
         `)
         .eq('restaurant_id', userProfile?.restaurant_id)
-        .gte('created_at', dateRange.start)
-        .lte('created_at', dateRange.end + 'T23:59:59')
-        .eq('status', 'delivered');
+        .eq('status', 'delivered')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
       
       if (error) throw error;
-
-      const totalRevenue = data.reduce((sum, order) => sum + order.total, 0);
-      const totalOrders = data.length;
-      const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Group by payment method
-      const paymentMethods = data.reduce((acc: any, order) => {
-        order.payments?.forEach((payment: any) => {
-          acc[payment.payment_method] = (acc[payment.payment_method] || 0) + payment.amount;
-        });
-        return acc;
-      }, {});
-
-      // Group by order type
-      const orderTypes = data.reduce((acc: any, order) => {
-        acc[order.order_type] = (acc[order.order_type] || 0) + 1;
-        return acc;
-      }, {});
-
-      // Daily sales for chart
-      const dailySales = data.reduce((acc: any, order) => {
-        const date = new Date(order.created_at).toLocaleDateString('pt-BR');
-        acc[date] = (acc[date] || 0) + order.total;
-        return acc;
-      }, {});
-
-      const chartData = Object.entries(dailySales).map(([date, total]) => ({
-        date,
-        total
-      }));
-
-      return {
-        totalRevenue,
-        totalOrders,
-        averageTicket,
-        paymentMethods,
-        orderTypes,
-        chartData
-      };
+      return data;
     },
     enabled: !!userProfile?.restaurant_id
   });
 
-  // Top Products
-  const { data: topProducts } = useQuery({
-    queryKey: ['top-products', userProfile?.restaurant_id, dateRange],
+  // Relatório de Produtos
+  const { data: productsData } = useQuery({
+    queryKey: ['products-report', userProfile?.restaurant_id, dateRange],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_items')
         .select(`
-          quantity,
-          total_price,
-          product:products(name)
+          *,
+          products(name, price, cost_price),
+          orders!inner(created_at, status, restaurant_id)
         `)
-        .gte('created_at', dateRange.start)
-        .lte('created_at', dateRange.end + 'T23:59:59');
+        .eq('orders.restaurant_id', userProfile?.restaurant_id)
+        .eq('orders.status', 'delivered')
+        .gte('orders.created_at', startDate.toISOString())
+        .lte('orders.created_at', endDate.toISOString());
       
       if (error) throw error;
-
-      const products = data.reduce((acc: any, item) => {
-        const productName = item.product?.name || 'Produto Desconhecido';
-        if (!acc[productName]) {
-          acc[productName] = { name: productName, quantity: 0, revenue: 0 };
-        }
-        acc[productName].quantity += item.quantity;
-        acc[productName].revenue += item.total_price;
-        return acc;
-      }, {});
-
-      return Object.values(products)
-        .sort((a: any, b: any) => b.quantity - a.quantity)
-        .slice(0, 10);
+      return data;
     },
     enabled: !!userProfile?.restaurant_id
   });
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  // Calcular estatísticas de vendas
+  const salesStats = React.useMemo(() => {
+    if (!salesData) return null;
 
-  const exportReport = (type: 'sales' | 'products') => {
-    // Implementation for export functionality
-    const data = type === 'sales' ? salesOverview : topProducts;
-    const csv = convertToCSV(data);
-    downloadCSV(csv, `${type}-report-${Date.now()}.csv`);
+    const totalOrders = salesData.length;
+    const totalRevenue = salesData.reduce((sum, order) => sum + order.total, 0);
+    const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    
+    const paymentMethods = salesData.reduce((acc, order) => {
+      order.payments?.forEach((payment: any) => {
+        if (payment.status === 'completed') {
+          acc[payment.payment_method] = (acc[payment.payment_method] || 0) + payment.amount;
+        }
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const orderTypes = salesData.reduce((acc, order) => {
+      acc[order.order_type] = (acc[order.order_type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalOrders,
+      totalRevenue,
+      averageTicket,
+      paymentMethods,
+      orderTypes
+    };
+  }, [salesData]);
+
+  // Calcular estatísticas de produtos
+  const productsStats = React.useMemo(() => {
+    if (!productsData) return null;
+
+    const productSales = productsData.reduce((acc, item) => {
+      const productName = item.products?.name || 'Produto desconhecido';
+      if (!acc[productName]) {
+        acc[productName] = {
+          name: productName,
+          quantity: 0,
+          revenue: 0,
+          cost: 0,
+          profit: 0
+        };
+      }
+      
+      acc[productName].quantity += item.quantity;
+      acc[productName].revenue += item.total_price;
+      acc[productName].cost += (item.products?.cost_price || 0) * item.quantity;
+      acc[productName].profit = acc[productName].revenue - acc[productName].cost;
+      
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(productSales).sort((a: any, b: any) => b.quantity - a.quantity);
+  }, [productsData]);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
-  const convertToCSV = (data: any) => {
-    // Simple CSV conversion
-    return JSON.stringify(data);
-  };
-
-  const downloadCSV = (csv: string, filename: string) => {
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute('download', filename);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const formatPeriod = (range: string) => {
+    switch (range) {
+      case 'today': return 'Hoje';
+      case 'yesterday': return 'Ontem';
+      case 'week': return 'Últimos 7 dias';
+      case 'month': return 'Últimos 30 dias';
+      default: return 'Período selecionado';
+    }
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Relatórios e Análises</h1>
-          <p className="text-gray-600">Análise de desempenho do seu restaurante</p>
+          <h1 className="text-2xl font-bold">Relatórios</h1>
+          <p className="text-gray-600">Análise detalhada do seu negócio</p>
         </div>
         
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Label>De:</Label>
-            <Input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Label>Até:</Label>
-            <Input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-            />
-          </div>
+        <div className="flex space-x-4">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Selecione o período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="yesterday">Ontem</SelectItem>
+              <SelectItem value="week">Últimos 7 dias</SelectItem>
+              <SelectItem value="month">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {salesOverview?.totalRevenue?.toFixed(2) || '0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {salesOverview?.totalOrders || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {salesOverview?.averageTicket?.toFixed(2) || '0,00'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Período</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm">
-              {new Date(dateRange.start).toLocaleDateString('pt-BR')} - {new Date(dateRange.end).toLocaleDateString('pt-BR')}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="sales" className="w-full">
-        <TabsList>
-          <TabsTrigger value="sales">Vendas</TabsTrigger>
-          <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-white border border-gray-200">
+          <TabsTrigger value="overview" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="sales" className="flex items-center space-x-2">
+            <DollarSign className="h-4 w-4" />
+            <span>Vendas</span>
+          </TabsTrigger>
+          <TabsTrigger value="products" className="flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Produtos</span>
+          </TabsTrigger>
+          <TabsTrigger value="customers" className="flex items-center space-x-2">
+            <Users className="h-4 w-4" />
+            <span>Clientes</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="sales" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Vendas Diárias</CardTitle>
-                <Button size="sm" variant="outline" onClick={() => exportReport('sales')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={salesOverview?.chartData || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Total']}
-                    />
-                    <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-600 p-3 rounded-xl">
+                    <DollarSign className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Faturamento</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(salesStats?.totalRevenue || 0)}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-green-600 p-3 rounded-xl">
+                    <Package className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Pedidos</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {salesStats?.totalOrders || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-purple-600 p-3 rounded-xl">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Ticket Médio</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(salesStats?.averageTicket || 0)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-orange-600 p-3 rounded-xl">
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Período</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatPeriod(dateRange)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-white border-gray-200">
+              <CardHeader>
+                <CardTitle>Métodos de Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(salesStats?.paymentMethods || {}).map(([method, amount]) => (
+                    <div key={method} className="flex items-center justify-between">
+                      <span className="capitalize text-gray-600">
+                        {method === 'cash' ? 'Dinheiro' : 
+                         method === 'credit_card' ? 'Cartão de Crédito' :
+                         method === 'debit_card' ? 'Cartão de Débito' :
+                         method === 'pix' ? 'PIX' : method}
+                      </span>
+                      <span className="font-bold">{formatCurrency(amount as number)}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-gray-200">
               <CardHeader>
                 <CardTitle>Tipos de Pedido</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={Object.entries(salesOverview?.orderTypes || {}).map(([type, count]) => ({
-                        name: type === 'dine_in' ? 'Mesa' : type === 'takeout' ? 'Balcão' : 'Entrega',
-                        value: count
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {Object.entries(salesOverview?.orderTypes || {}).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="space-y-4">
+                  {Object.entries(salesStats?.orderTypes || {}).map(([type, count]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span className="capitalize text-gray-600">
+                        {type === 'dine_in' ? 'Balcão' : 
+                         type === 'delivery' ? 'Delivery' :
+                         type === 'takeout' ? 'Retirada' : type}
+                      </span>
+                      <span className="font-bold">{count as number} pedidos</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="products" className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="bg-white border-gray-200">
+            <CardHeader>
               <CardTitle>Produtos Mais Vendidos</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => exportReport('products')}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
+              <CardDescription>Ranking de produtos por quantidade vendida</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={topProducts || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="quantity" fill="#8884d8" name="Quantidade" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                {(productsStats as any[])?.slice(0, 10).map((product, index) => (
+                  <div key={product.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-gray-600">{product.quantity} unidades</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{formatCurrency(product.revenue)}</p>
+                      <p className="text-sm text-green-600">
+                        Lucro: {formatCurrency(product.profit)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="payments" className="space-y-6">
-          <Card>
+        <TabsContent value="sales">
+          <Card className="bg-white border-gray-200">
             <CardHeader>
-              <CardTitle>Métodos de Pagamento</CardTitle>
+              <CardTitle>Relatório de Vendas Detalhado</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={Object.entries(salesOverview?.paymentMethods || {}).map(([method, amount]) => ({
-                      name: method === 'cash' ? 'Dinheiro' : method === 'card' ? 'Cartão' : 'PIX',
-                      value: amount
-                    }))}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {Object.entries(salesOverview?.paymentMethods || {}).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `R$ ${Number(value).toFixed(2)}`} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="text-center py-8 text-gray-500">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4" />
+                <p>Gráficos detalhados de vendas em desenvolvimento...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="customers">
+          <Card className="bg-white border-gray-200">
+            <CardHeader>
+              <CardTitle>Relatório de Clientes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-gray-500">
+                <Users className="h-12 w-12 mx-auto mb-4" />
+                <p>Análise de clientes em desenvolvimento...</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
