@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import RestaurantSelector from '@/components/admin/RestaurantSelector';
 
 interface CreatePromotionModalProps {
   open: boolean;
@@ -29,9 +29,17 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
+
+  const isAdmin = userProfile?.role === 'admin';
+  const effectiveRestaurantId = isAdmin ? selectedRestaurantId : userProfile?.restaurant_id;
 
   const createPromotionMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      if (!effectiveRestaurantId) {
+        throw new Error('Restaurante deve ser selecionado');
+      }
+
       let bannerUrl = null;
       
       // Upload banner se existir
@@ -62,7 +70,7 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
         ends_at: endDate?.toISOString(),
         banner_url: bannerUrl,
         coupon_code: formData.get('coupon_code') as string || null,
-        restaurant_id: userProfile?.restaurant_id,
+        restaurant_id: effectiveRestaurantId,
         is_active: true
       };
 
@@ -97,6 +105,7 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
       setBannerFile(null);
       setStartDate(undefined);
       setEndDate(undefined);
+      setSelectedRestaurantId(null);
       toast.success('Promoção criada com sucesso!');
     },
     onError: (error) => {
@@ -106,6 +115,12 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (isAdmin && !selectedRestaurantId) {
+      toast.error('Por favor, selecione um restaurante');
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     createPromotionMutation.mutate(formData);
   };
@@ -118,7 +133,7 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
   };
 
   const getSelectedProductsData = () => {
-    return products.filter(p => selectedProducts.includes(p.id));
+    return (products || []).filter(p => selectedProducts.includes(p.id));
   };
 
   return (
@@ -134,8 +149,21 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          {isAdmin && (
+            <div className="animate-fade-in" style={{ animationDelay: '0.05s' }}>
+              <Label className="text-gray-700 font-medium">Restaurante</Label>
+              <div className="mt-1">
+                <RestaurantSelector
+                  selectedRestaurantId={selectedRestaurantId}
+                  onRestaurantChange={setSelectedRestaurantId}
+                  placeholder="Selecione o restaurante"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Dados Básicos */}
           <div className="grid grid-cols-2 gap-6">
-            {/* Dados Básicos */}
             <div className="space-y-4">
               <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
                 <Label htmlFor="name" className="text-gray-700 font-medium">Nome da Promoção</Label>
@@ -306,7 +334,7 @@ const CreatePromotionModal = ({ open, onOpenChange, products }: CreatePromotionM
           <div className="border-t border-gray-200 pt-6 animate-fade-in" style={{ animationDelay: '0.55s' }}>
             <Label className="text-gray-900 font-semibold text-lg mb-4 block">Produtos da Promoção</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
-              {products.map((product) => (
+              {(products || []).map((product) => (
                 <div
                   key={product.id}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${

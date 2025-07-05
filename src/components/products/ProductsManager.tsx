@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { useCategories } from '@/hooks/useCategories';
+import { useProducts } from '@/hooks/useProducts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +31,10 @@ const ProductsManager = () => {
 
   const isAdmin = userProfile?.role === 'admin';
   const effectiveRestaurantId = isAdmin ? selectedRestaurantId : userProfile?.restaurant_id;
+
+  // Fetch categories and products only when restaurant is selected
+  const { data: categories = [] } = useCategories();
+  const { data: products = [] } = useProducts(selectedCategory);
 
   const handleEditProduct = (product: any) => {
     setEditingProduct(product);
@@ -168,6 +174,7 @@ const ProductsManager = () => {
         open={productModalOpen}
         onOpenChange={handleCloseProductModal}
         editingProduct={editingProduct}
+        categories={categories}
       />
 
       <CreateCategoryModal
@@ -183,6 +190,7 @@ const ProductsManager = () => {
       <CreatePromotionModal
         open={promotionModalOpen}
         onOpenChange={setPromotionModalOpen}
+        products={products}
       />
     </div>
   );

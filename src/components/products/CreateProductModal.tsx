@@ -10,19 +10,29 @@ import { useAuth } from '@/components/AuthProvider';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import RestaurantSelector from '@/components/admin/RestaurantSelector';
 
 interface CreateProductModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: any[];
+  editingProduct?: any;
 }
 
-const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductModalProps) => {
+const CreateProductModal = ({ open, onOpenChange, categories, editingProduct }: CreateProductModalProps) => {
   const { userProfile } = useAuth();
   const queryClient = useQueryClient();
+  const [selectedRestaurantId, setSelectedRestaurantId] = React.useState<string | null>(null);
+
+  const isAdmin = userProfile?.role === 'admin';
+  const effectiveRestaurantId = isAdmin ? selectedRestaurantId : userProfile?.restaurant_id;
 
   const createProductMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      if (!effectiveRestaurantId) {
+        throw new Error('Restaurante deve ser selecionado');
+      }
+
       const productData = {
         name: formData.get('name') as string,
         description: formData.get('description') as string,
@@ -30,7 +40,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
         cost_price: parseFloat(formData.get('cost_price') as string) || 0,
         category_id: formData.get('category_id') as string || null,
         image_url: formData.get('image_url') as string || null,
-        restaurant_id: userProfile?.restaurant_id,
+        restaurant_id: effectiveRestaurantId,
         is_active: true
       };
 
@@ -53,7 +63,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
           .from('inventory')
           .insert({
             product_id: data.id,
-            restaurant_id: userProfile?.restaurant_id,
+            restaurant_id: effectiveRestaurantId,
             current_stock: initialStock,
             min_stock: minStock,
             max_stock: maxStock,
@@ -66,6 +76,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       onOpenChange(false);
+      setSelectedRestaurantId(null);
       toast.success('Produto criado com sucesso!');
     },
     onError: (error) => {
@@ -75,6 +86,12 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (isAdmin && !selectedRestaurantId) {
+      toast.error('Por favor, selecione um restaurante');
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     createProductMutation.mutate(formData);
   };
@@ -87,6 +104,19 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-5">
+          {isAdmin && (
+            <div className="animate-fade-in" style={{ animationDelay: '0.05s' }}>
+              <Label className="text-gray-700 font-medium">Restaurante</Label>
+              <div className="mt-1">
+                <RestaurantSelector
+                  selectedRestaurantId={selectedRestaurantId}
+                  onRestaurantChange={setSelectedRestaurantId}
+                  placeholder="Selecione o restaurante"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <Label htmlFor="name" className="text-gray-700 font-medium">Nome do Produto</Label>
@@ -105,7 +135,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200 animate-scale-in">
-                  {categories.map((category) => (
+                  {categories?.map((category) => (
                     <SelectItem 
                       key={category.id} 
                       value={category.id} 
@@ -113,7 +143,7 @@ const CreateProductModal = ({ open, onOpenChange, categories }: CreateProductMod
                     >
                       {category.name}
                     </SelectItem>
-                  ))}
+                  )) || []}
                 </SelectContent>
               </Select>
             </div>
