@@ -1938,9 +1938,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_restaurant_login_info: {
+        Args: { restaurant_id: string }
+        Returns: {
+          user_id: string
+          email: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
       is_plan_active: {
         Args: { restaurant_uuid: string }
         Returns: boolean
+      }
+      reset_user_password: {
+        Args: { user_id: string; new_password: string }
+        Returns: undefined
       }
       update_restaurant_status: {
         Args: Record<PropertyKey, never>
@@ -1948,6 +1961,10 @@ export type Database = {
       }
       update_restaurant_status_daily: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_user_email: {
+        Args: { user_id: string; new_email: string }
         Returns: undefined
       }
     }
