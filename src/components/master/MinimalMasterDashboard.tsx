@@ -64,56 +64,17 @@ const MinimalMasterDashboard = () => {
     { id: 'staff', label: 'Equipe', icon: Users }
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
-              <p className="text-gray-600">Gestão completa do sistema</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <RestaurantRegistrationModal />
-              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                <Shield className="h-3 w-3 mr-1" />
-                {userProfile?.role === 'admin' ? 'Administrador' : 'Suporte'}
-              </Badge>
-            </div>
-          </div>
+  const handleTabClick = (tabId: string) => {
+    console.log('Changing tab from', activeTab, 'to', tabId);
+    setActiveTab(tabId);
+  };
 
-          {/* Navigation */}
-          <div className="flex space-x-1 bg-white p-1 rounded-lg border">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 ${
-                    activeTab === tab.id 
-                      ? 'bg-gray-900 text-white' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                  {tab.id === 'implementation' && stats?.pendingImplementation > 0 && (
-                    <Badge className="bg-red-500 text-white text-xs px-1 py-0 min-w-[16px] h-4">
-                      {stats.pendingImplementation}
-                    </Badge>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Content */}
-        {activeTab === 'overview' && (
+  const renderTabContent = () => {
+    console.log('Rendering content for tab:', activeTab);
+    
+    switch (activeTab) {
+      case 'overview':
+        return (
           <div className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -202,7 +163,7 @@ const MinimalMasterDashboard = () => {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Button 
                     variant="outline" 
-                    onClick={() => setActiveTab('tickets')}
+                    onClick={() => handleTabClick('tickets')}
                     className="justify-start"
                   >
                     <Ticket className="h-4 w-4 mr-2" />
@@ -210,7 +171,7 @@ const MinimalMasterDashboard = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setActiveTab('restaurants')}
+                    onClick={() => handleTabClick('restaurants')}
                     className="justify-start"
                   >
                     <Building2 className="h-4 w-4 mr-2" />
@@ -218,7 +179,7 @@ const MinimalMasterDashboard = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setActiveTab('implementation')}
+                    onClick={() => handleTabClick('implementation')}
                     className="justify-start"
                   >
                     <Settings className="h-4 w-4 mr-2" />
@@ -226,7 +187,7 @@ const MinimalMasterDashboard = () => {
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setActiveTab('staff')}
+                    onClick={() => handleTabClick('staff')}
                     className="justify-start"
                   >
                     <Users className="h-4 w-4 mr-2" />
@@ -243,12 +204,72 @@ const MinimalMasterDashboard = () => {
               </CardContent>
             </Card>
           </div>
-        )}
+        );
+      case 'tickets':
+        return <MasterTicketsView />;
+      case 'restaurants':
+        return <MasterRestaurantsView />;
+      case 'implementation':
+        return <ImplementationTicketsView />;
+      case 'staff':
+        return <MasterStaffView />;
+      default:
+        return <div>Tab não encontrada</div>;
+    }
+  };
 
-        {activeTab === 'tickets' && <MasterTicketsView />}
-        {activeTab === 'restaurants' && <MasterRestaurantsView />}
-        {activeTab === 'implementation' && <ImplementationTicketsView />}
-        {activeTab === 'staff' && <MasterStaffView />}
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Painel Master</h1>
+              <p className="text-gray-600">Gestão completa do sistema</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <RestaurantRegistrationModal />
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Shield className="h-3 w-3 mr-1" />
+                {userProfile?.role === 'admin' ? 'Administrador' : 'Suporte'}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex space-x-1 bg-white p-1 rounded-lg border">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              
+              return (
+                <Button
+                  key={tab.id}
+                  variant={isActive ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`flex items-center gap-2 ${
+                    isActive 
+                      ? 'bg-gray-900 text-white' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                  {tab.id === 'implementation' && stats?.pendingImplementation > 0 && (
+                    <Badge className="bg-red-500 text-white text-xs px-1 py-0 min-w-[16px] h-4">
+                      {stats.pendingImplementation}
+                    </Badge>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content */}
+        {renderTabContent()}
       </div>
     </div>
   );
