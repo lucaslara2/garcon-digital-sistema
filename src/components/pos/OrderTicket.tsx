@@ -12,6 +12,14 @@ interface OrderItem {
   products: {
     name: string;
   };
+  notes?: string;
+  order_item_addons?: Array<{
+    product_addons: {
+      name: string;
+    };
+    total_price: number;
+    quantity: number;
+  }>;
 }
 
 interface Order {
@@ -27,6 +35,8 @@ interface Order {
     table_number: number;
   };
   order_items: OrderItem[];
+  delivery_instructions?: string;
+  customer_phone?: string;
 }
 
 interface OrderTicketProps {
@@ -36,17 +46,17 @@ interface OrderTicketProps {
 export function OrderTicket({ order }: OrderTicketProps) {
   if (!order) {
     return (
-      <div className="bg-slate-900 rounded-lg border border-slate-800 h-full">
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-lg font-semibold text-white flex items-center">
-            <Receipt className="h-5 w-5 mr-2 text-amber-400" />
+      <div className="bg-white rounded-lg border border-gray-200 h-full shadow-sm">
+        <div className="p-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Receipt className="h-5 w-5 mr-2 text-blue-600" />
             Comanda do Pedido
           </h2>
         </div>
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-          <Receipt className="h-12 w-12 mb-4 text-slate-600" />
+        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <Receipt className="h-12 w-12 mb-4 text-gray-300" />
           <p className="text-lg font-medium mb-2">Selecione um pedido</p>
-          <p className="text-sm text-slate-500">Clique em um pedido para ver detalhes</p>
+          <p className="text-sm text-gray-500">Clique em um pedido para ver a comanda</p>
         </div>
       </div>
     );
@@ -54,10 +64,11 @@ export function OrderTicket({ order }: OrderTicketProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'preparing': return 'bg-blue-500';
-      case 'ready': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ready': return 'bg-green-100 text-green-800 border-green-200';
+      case 'delivered': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -66,94 +77,195 @@ export function OrderTicket({ order }: OrderTicketProps) {
       case 'pending': return 'Pendente';
       case 'preparing': return 'Preparando';
       case 'ready': return 'Pronto';
+      case 'delivered': return 'Entregue';
       default: return status;
     }
   };
 
+  const handlePrint = () => {
+    const printContent = `
+=================================
+        RESTAURANTE
+=================================
+COMANDA #${order.id.slice(-8)}
+Data: ${new Date(order.created_at).toLocaleString('pt-BR')}
+
+CLIENTE: ${order.customer_name}
+${order.customer_phone ? `TELEFONE: ${order.customer_phone}` : ''}
+LOCAL: ${order.restaurant_tables?.table_number 
+  ? `Mesa ${order.restaurant_tables.table_number}`
+  : 'Balcão'
+}
+
+---------------------------------
+ITENS:
+${order.order_items.map((item: any) => {
+  let itemText = `${item.quantity}x ${item.products.name} - R$ ${item.total_price.toFixed(2)}`;
+  if (item.notes) itemText += `\n   Obs: ${item.notes}`;
+  if (item.order_item_addons?.length > 0) {
+    itemText += '\n   Adicionais:';
+    item.order_item_addons.forEach((addon: any) => {
+      itemText += `\n   - ${addon.product_addons.name} (+R$ ${addon.total_price.toFixed(2)})`;
+    });
+  }
+  return itemText;
+}).join('\n')}
+
+---------------------------------
+SUBTOTAL: R$ ${order.subtotal.toFixed(2)}
+TOTAL: R$ ${order.total.toFixed(2)}
+
+${order.delivery_instructions ? `INSTRUÇÕES:\n${order.delivery_instructions}` : ''}
+
+=================================
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Comanda #${order.id.slice(-8)}</title>
+            <style>
+              body { 
+                font-family: 'Courier New', monospace; 
+                font-size: 12px; 
+                margin: 20px; 
+                line-height: 1.4;
+              }
+              pre { 
+                white-space: pre-wrap; 
+                margin: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <pre>${printContent}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   return (
-    <div className="bg-slate-900 rounded-lg border border-slate-800 h-full flex flex-col">
-      <div className="p-4 border-b border-slate-800">
-        <h2 className="text-lg font-semibold text-white flex items-center">
-          <Receipt className="h-5 w-5 mr-2 text-amber-400" />
-          Comanda do Pedido
-        </h2>
+    <div className="bg-white rounded-lg border border-gray-200 h-full flex flex-col shadow-sm">
+      {/* Cabeçalho */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Receipt className="h-5 w-5 mr-2 text-blue-600" />
+            Comanda do Pedido
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="flex items-center space-x-2"
+          >
+            <Printer className="h-4 w-4" />
+            <span>Imprimir</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Cabeçalho */}
-        <div className="text-center border-b border-slate-800 pb-4">
-          <h3 className="text-xl font-bold text-white mb-2">
-            PEDIDO #{order.id.slice(-8)}
-          </h3>
-          <Badge className={`${getStatusColor(order.status)} text-white mb-2`}>
-            {getStatusText(order.status)}
-          </Badge>
-          <div className="text-sm text-slate-300">
-            <div className="flex items-center justify-center space-x-2">
-              <Clock className="h-4 w-4" />
-              <span>{new Date(order.created_at).toLocaleString()}</span>
+      {/* Conteúdo da Comanda */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* Estilo de Comanda de Restaurante */}
+        <div className="max-w-sm mx-auto bg-white border-2 border-dashed border-gray-300 p-4 font-mono text-sm">
+          {/* Cabeçalho da Comanda */}
+          <div className="text-center border-b border-dashed border-gray-400 pb-3 mb-3">
+            <h3 className="text-lg font-bold">RESTAURANTE</h3>
+            <div className="text-xs text-gray-600 mt-1">
+              {new Date(order.created_at).toLocaleString('pt-BR')}
             </div>
           </div>
-        </div>
 
-        {/* Informações do Cliente */}
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-slate-300">
-            <User className="h-4 w-4" />
-            <span><strong>Cliente:</strong> {order.customer_name}</span>
+          {/* Número do Pedido */}
+          <div className="text-center mb-4">
+            <div className="text-2xl font-bold">COMANDA</div>
+            <div className="text-xl font-bold">#{order.id.slice(-8)}</div>
+            <Badge className={`mt-2 ${getStatusColor(order.status)}`}>
+              {getStatusText(order.status)}
+            </Badge>
           </div>
-          <div className="flex items-center space-x-2 text-slate-300">
-            <MapPin className="h-4 w-4" />
-            <span><strong>Local:</strong> {
-              order.restaurant_tables?.table_number 
-                ? `Mesa ${order.restaurant_tables.table_number}`
-                : 'Balcão'
-            }</span>
-          </div>
-        </div>
 
-        {/* Itens */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-white">Itens do Pedido:</h4>
-          <div className="space-y-2">
-            {order.order_items.map((item) => (
-              <div key={item.id} className="flex justify-between items-start p-3 bg-slate-800 rounded-lg border border-slate-700">
-                <div className="flex-1">
-                  <div className="font-medium text-white">{item.products.name}</div>
-                  <div className="text-sm text-slate-400">
-                    {item.quantity}x R$ {item.unit_price.toFixed(2)}
+          {/* Informações do Cliente */}
+          <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div className="flex justify-between mb-1">
+              <span>CLIENTE:</span>
+              <span className="font-bold">{order.customer_name}</span>
+            </div>
+            <div className="flex justify-between mb-1">
+              <span>LOCAL:</span>
+              <span className="font-bold">
+                {order.restaurant_tables?.table_number 
+                  ? `Mesa ${order.restaurant_tables.table_number}`
+                  : 'Balcão'
+                }
+              </span>
+            </div>
+            {order.customer_phone && (
+              <div className="flex justify-between mb-1">
+                <span>FONE:</span>
+                <span className="font-bold">{order.customer_phone}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Lista de Itens */}
+          <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div className="font-bold mb-2">ITENS:</div>
+            {order.order_items.map((item, index) => (
+              <div key={index} className="mb-3">
+                <div className="flex justify-between">
+                  <span>{item.quantity}x {item.products.name}</span>
+                  <span>R$ {item.total_price.toFixed(2)}</span>
+                </div>
+                {item.notes && (
+                  <div className="text-xs text-gray-600 ml-2 mt-1">
+                    Obs: {item.notes}
                   </div>
-                </div>
-                <div className="font-bold text-amber-400">
-                  R$ {item.total_price.toFixed(2)}
-                </div>
+                )}
+                {item.order_item_addons?.map((addon, addonIndex) => (
+                  <div key={addonIndex} className="text-xs text-gray-600 ml-2">
+                    + {addon.product_addons.name} (R$ {addon.total_price.toFixed(2)})
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Total */}
-        <div className="space-y-2 border-t border-slate-800 pt-4">
-          <div className="flex justify-between text-slate-300">
-            <span>Subtotal:</span>
-            <span>R$ {order.subtotal.toFixed(2)}</span>
+          {/* Total */}
+          <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div className="flex justify-between mb-1">
+              <span>SUBTOTAL:</span>
+              <span>R$ {order.subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg">
+              <span>TOTAL:</span>
+              <span>R$ {order.total.toFixed(2)}</span>
+            </div>
           </div>
-          <div className="flex justify-between text-lg font-bold text-white">
-            <span>Total:</span>
-            <span className="text-amber-400">R$ {order.total.toFixed(2)}</span>
+
+          {/* Instruções */}
+          {order.delivery_instructions && (
+            <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
+              <div className="font-bold mb-1">INSTRUÇÕES:</div>
+              <div className="text-xs">{order.delivery_instructions}</div>
+            </div>
+          )}
+
+          {/* Rodapé */}
+          <div className="text-center text-xs text-gray-600">
+            <div>Obrigado pela preferência!</div>
+            <div className="mt-2">
+              <Clock className="h-3 w-3 inline mr-1" />
+              {new Date(order.created_at).toLocaleTimeString('pt-BR')}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Botão Imprimir */}
-      <div className="p-4 border-t border-slate-800">
-        <Button
-          onClick={() => window.print()}
-          className="w-full bg-slate-700 hover:bg-slate-600 text-white"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          Imprimir Comanda
-        </Button>
       </div>
     </div>
   );
