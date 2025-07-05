@@ -84,32 +84,54 @@ export const useStockMovements = (inventoryId?: string) => {
   return useQuery({
     queryKey: ['stock-movements', userProfile?.restaurant_id, inventoryId],
     queryFn: async () => {
-      let query = supabase
-        .from('stock_movements')
-        .select(`
-          *,
-          inventory(
-            products(name)
-          )
-        `);
-
       if (inventoryId) {
-        query = query.eq('inventory_id', inventoryId);
+        // Query específica para um item do inventário
+        const { data, error } = await supabase
+          .from('stock_movements')
+          .select(`
+            *,
+            inventory(
+              products(name)
+            )
+          `)
+          .eq('inventory_id', inventoryId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) throw error;
+        return data;
       } else {
-        query = query.in('inventory_id', 
-          supabase
-            .from('inventory')
-            .select('id')
-            .eq('restaurant_id', userProfile?.restaurant_id)
-        );
-      }
+        // Query para todos os movimentos do restaurante
+        // Primeiro buscar todos os IDs do inventário do restaurante
+        const { data: inventoryIds, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('id')
+          .eq('restaurant_id', userProfile?.restaurant_id);
 
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data;
+        if (inventoryError) throw inventoryError;
+
+        if (!inventoryIds || inventoryIds.length === 0) {
+          return [];
+        }
+
+        // Agora buscar os movimentos usando os IDs encontrados
+        const ids = inventoryIds.map(inv => inv.id);
+        
+        const { data, error } = await supabase
+          .from('stock_movements')
+          .select(`
+            *,
+            inventory(
+              products(name)
+            )
+          `)
+          .in('inventory_id', ids)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) throw error;
+        return data;
+      }
     },
     enabled: !!userProfile?.restaurant_id
   });
