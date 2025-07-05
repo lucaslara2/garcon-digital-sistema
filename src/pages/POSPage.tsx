@@ -1,9 +1,15 @@
 
 import React from 'react';
-import POSSystem from '@/components/pos/POSSystem';
+import { Navbar } from '@/components/layout/Navbar';
+import { POSSystem } from '@/components/pos/POSSystem';
 
 const POSPage = () => {
-  return <POSSystem />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <POSSystem />
+    </div>
+  );
 };
 
 export default POSPage;

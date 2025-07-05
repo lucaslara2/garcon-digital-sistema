@@ -1,9 +1,17 @@
 
 import React from 'react';
-import KitchenDisplay from '@/components/kitchen/KitchenDisplay';
+import { Navbar } from '@/components/layout/Navbar';
+import { KitchenDisplay } from '@/components/kitchen/KitchenDisplay';
 
 const KitchenPage = () => {
-  return <KitchenDisplay />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="p-6">
+        <KitchenDisplay />
+      </div>
+    </div>
+  );
 };
 
 export default KitchenPage;

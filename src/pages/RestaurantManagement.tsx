@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Navbar } from '@/components/layout/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MenuManager from '@/components/menu/MenuManager';
 import TableManager from '@/components/tables/TableManager';
@@ -16,6 +17,7 @@ import {
 const RestaurantManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       <div className="container mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Gerenciamento do Restaurante</h1>
@@ -23,7 +25,7 @@ const RestaurantManagement = () => {
         </div>
 
         <Tabs defaultValue="menu" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-5 bg-white border border-gray-200">
             <TabsTrigger value="menu" className="flex items-center space-x-2">
               <Utensils className="h-4 w-4" />
               <span>Menu</span>
@@ -46,24 +48,24 @@ const RestaurantManagement = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="menu">
+          <TabsContent value="menu" className="bg-white rounded-lg border border-gray-200 mt-4">
             <MenuManager />
           </TabsContent>
 
-          <TabsContent value="tables">
+          <TabsContent value="tables" className="bg-white rounded-lg border border-gray-200 mt-4">
             <TableManager />
           </TabsContent>
 
-          <TabsContent value="qr">
+          <TabsContent value="qr" className="bg-white rounded-lg border border-gray-200 mt-4">
             <QRCodeGenerator />
           </TabsContent>
 
-          <TabsContent value="reports">
+          <TabsContent value="reports" className="bg-white rounded-lg border border-gray-200 mt-4">
             <ReportsManager />
           </TabsContent>
 
-          <TabsContent value="settings">
-            <div className="text-center py-8">
+          <TabsContent value="settings" className="bg-white rounded-lg border border-gray-200 mt-4">
+            <div className="text-center py-8 p-6">
               <Settings className="h-12 w-12 mx-auto mb-4 text-gray-400" />
               <h3 className="text-lg font-medium mb-2">Configurações</h3>
               <p className="text-gray-600">
