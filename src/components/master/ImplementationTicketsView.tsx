@@ -19,7 +19,8 @@ import {
   Settings,
   Zap,
   Phone,
-  Mail
+  Mail,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,27 +48,44 @@ const ImplementationTicketsView = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar tickets de implementação:', error);
+        throw error;
+      }
       return data;
     }
   });
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ ticketId, status }: { ticketId: string, status: string }) => {
+      const updateData: any = { 
+        status, 
+        updated_at: new Date().toISOString()
+      };
+      
+      if (status === 'resolved') {
+        updateData.resolved_by = userProfile?.id;
+        updateData.resolved_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('tickets')
-        .update({ 
-          status, 
-          updated_at: new Date().toISOString(),
-          ...(status === 'resolved' && { resolved_by: userProfile?.id, resolved_at: new Date().toISOString() })
-        })
+        .update(updateData)
         .eq('id', ticketId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar ticket:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['implementation-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['master-stats'] });
       toast.success('Status atualizado com sucesso!');
+    },
+    onError: (error: any) => {
+      console.error('Erro na mutação:', error);
+      toast.error('Erro ao atualizar status: ' + error.message);
     }
   });
 
@@ -91,6 +109,16 @@ const ImplementationTicketsView = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open': return 'Novo';
+      case 'in_progress': return 'Implementando';
+      case 'resolved': return 'Implementado';
+      case 'closed': return 'Finalizado';
+      default: return status;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-red-500 text-white';
@@ -98,6 +126,16 @@ const ImplementationTicketsView = () => {
       case 'medium': return 'bg-yellow-500 text-white';
       case 'low': return 'bg-green-500 text-white';
       default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'Urgente';
+      case 'high': return 'Alta';
+      case 'medium': return 'Média';
+      case 'low': return 'Baixa';
+      default: return priority;
     }
   };
 
@@ -215,12 +253,10 @@ const ImplementationTicketsView = () => {
                         <h3 className="font-medium text-gray-900">{ticket.title}</h3>
                         {getStatusIcon(ticket.status)}
                         <Badge className={getStatusColor(ticket.status)}>
-                          {ticket.status === 'open' ? 'Novo' :
-                           ticket.status === 'in_progress' ? 'Implementando' :
-                           ticket.status === 'resolved' ? 'Implementado' : 'Finalizado'}
+                          {getStatusLabel(ticket.status)}
                         </Badge>
                         <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority}
+                          {getPriorityLabel(ticket.priority)}
                         </Badge>
                       </div>
                       
@@ -232,6 +268,14 @@ const ImplementationTicketsView = () => {
                             {ticket.restaurant.name}
                             <Badge variant="outline" className="ml-2">
                               {ticket.restaurant.plan_type}
+                            </Badge>
+                            <Badge variant="outline" className={
+                              ticket.restaurant.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                              ticket.restaurant.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                              'bg-red-50 text-red-700 border-red-200'
+                            }>
+                              {ticket.restaurant.status === 'active' ? 'Ativo' :
+                               ticket.restaurant.status === 'pending' ? 'Pendente' : 'Inativo'}
                             </Badge>
                           </h4>
                           <div className="grid grid-cols-2 gap-4 text-sm text-blue-700">
@@ -252,12 +296,18 @@ const ImplementationTicketsView = () => {
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {ticket.user?.name}
+                          {ticket.user?.name || 'Sistema'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(ticket.created_at).toLocaleDateString()}
+                          {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
                         </span>
+                        {ticket.resolved_at && (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-3 w-3" />
+                            Resolvido em {new Date(ticket.resolved_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -269,6 +319,7 @@ const ImplementationTicketsView = () => {
                             ticketId: ticket.id,
                             status: 'in_progress'
                           })}
+                          disabled={updateTicketMutation.isPending}
                           className="bg-blue-600 hover:bg-blue-700"
                         >
                           <Zap className="h-3 w-3 mr-1" />
@@ -282,10 +333,25 @@ const ImplementationTicketsView = () => {
                             ticketId: ticket.id,
                             status: 'resolved'
                           })}
+                          disabled={updateTicketMutation.isPending}
                           className="bg-green-600 hover:bg-green-700"
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Finalizar
+                        </Button>
+                      )}
+                      {ticket.status === 'resolved' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateTicketMutation.mutate({
+                            ticketId: ticket.id,
+                            status: 'closed'
+                          })}
+                          disabled={updateTicketMutation.isPending}
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Arquivar
                         </Button>
                       )}
                     </div>
@@ -297,6 +363,9 @@ const ImplementationTicketsView = () => {
                 <div className="text-center py-8 text-gray-500">
                   <Settings className="h-12 w-12 mx-auto mb-4 opacity-30" />
                   <p>Nenhum ticket de implementação encontrado</p>
+                  {searchTerm && (
+                    <p className="text-sm mt-2">Tente ajustar sua busca ou filtros</p>
+                  )}
                 </div>
               )}
             </div>

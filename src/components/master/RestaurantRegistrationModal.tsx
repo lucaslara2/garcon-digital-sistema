@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { Plus, Check, Clock, CreditCard, DollarSign, Zap } from 'lucide-react';
+import { Plus, Check, Clock, CreditCard, DollarSign, Zap, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const plans = [
@@ -76,6 +76,7 @@ const RestaurantRegistrationModal = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -89,49 +90,141 @@ const RestaurantRegistrationModal = () => {
     notes: ''
   });
 
+  const validateStep1 = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
+    if (!formData.email.trim()) newErrors.email = 'Email é obrigatório';
+    if (!formData.phone.trim()) newErrors.phone = 'Telefone é obrigatório';
+    if (!formData.cnpj.trim()) newErrors.cnpj = 'CNPJ é obrigatório';
+    
+    // Validação básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+    
+    // Validação básica de CNPJ (apenas números e formato)
+    const cnpjNumbers = formData.cnpj.replace(/\D/g, '');
+    if (formData.cnpj && cnpjNumbers.length !== 14) {
+      newErrors.cnpj = 'CNPJ deve ter 14 dígitos';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep3 = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.payment_method) newErrors.payment_method = 'Forma de pagamento é obrigatória';
+    if (!formData.contact_name.trim()) newErrors.contact_name = 'Nome do contato é obrigatório';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const createRestaurantMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error: restaurantError } = await supabase
+      console.log('Iniciando cadastro do restaurante:', data);
+      
+      // Primeiro verificar se já existe um restaurante com esse CNPJ
+      const { data: existingRestaurant, error: checkError } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .eq('cnpj', data.cnpj)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Erro ao verificar CNPJ:', checkError);
+        throw new Error('Erro ao verificar CNPJ existente');
+      }
+
+      if (existingRestaurant) {
+        throw new Error(`Já existe um restaurante cadastrado com este CNPJ: ${existingRestaurant.name}`);
+      }
+
+      // Criar o restaurante
+      const { data: restaurant, error: restaurantError } = await supabase
         .from('restaurants')
         .insert({
           name: data.name,
           email: data.email,
           phone: data.phone,
           cnpj: data.cnpj,
-          address: data.address,
+          address: data.address || null,
           plan_type: data.plan_type as any,
           status: 'pending'
-        });
+        })
+        .select()
+        .single();
 
-      if (restaurantError) throw restaurantError;
+      if (restaurantError) {
+        console.error('Erro ao criar restaurante:', restaurantError);
+        if (restaurantError.code === '23505') {
+          throw new Error('Este CNPJ já está cadastrado no sistema');
+        }
+        throw new Error('Erro ao cadastrar restaurante: ' + restaurantError.message);
+      }
+
+      console.log('Restaurante criado:', restaurant);
 
       // Criar ticket de implementação
+      const ticketData = {
+        title: `Implementação: ${data.name}`,
+        description: `
+🏪 NOVO RESTAURANTE CADASTRADO
+
+📋 Informações do Restaurante:
+• Nome: ${data.name}
+• Email: ${data.email}
+• Telefone: ${data.phone}
+• CNPJ: ${data.cnpj}
+• Endereço: ${data.address || 'Não informado'}
+
+📦 Detalhes do Plano:
+• Plano escolhido: ${plans.find(p => p.id === data.plan_type)?.name || data.plan_type}
+• Forma de pagamento: ${paymentMethods.find(p => p.id === data.payment_method)?.name || data.payment_method}
+• Implementação incluída: ${data.include_implementation ? '✅ Sim' : '❌ Não'}
+
+👤 Contato Responsável:
+• Nome: ${data.contact_name}
+
+📝 Observações:
+${data.notes || 'Nenhuma observação adicional'}
+
+⚠️ PRÓXIMOS PASSOS:
+1. Entrar em contato com o cliente
+2. Confirmar dados e requisitos
+3. Agendar implementação (se contratada)
+4. Ativar plano após confirmação de pagamento
+        `.trim(),
+        priority: 'high',
+        category: 'implementation',
+        status: 'open',
+        user_id: userProfile?.id,
+        restaurant_id: restaurant.id
+      };
+
       const { error: ticketError } = await supabase
         .from('tickets')
-        .insert({
-          title: `Novo Restaurante: ${data.name}`,
-          description: `
-Novo restaurante cadastrado:
-- Nome: ${data.name}
-- Plano: ${data.plan_type}
-- Forma de pagamento: ${data.payment_method}
-- Implementação incluída: ${data.include_implementation ? 'Sim' : 'Não'}
-- Contato: ${data.contact_name}
-- Observações: ${data.notes || 'Nenhuma'}
-          `,
-          priority: 'high',
-          category: 'implementation',
-          status: 'open',
-          user_id: userProfile?.id,
-          restaurant_id: userProfile?.restaurant_id
-        });
+        .insert(ticketData);
 
-      if (ticketError) throw ticketError;
+      if (ticketError) {
+        console.error('Erro ao criar ticket:', ticketError);
+        // Não falhar o processo todo se o ticket não for criado
+        console.warn('Restaurante criado mas ticket de implementação falhou');
+      }
+
+      return restaurant;
     },
-    onSuccess: () => {
+    onSuccess: (restaurant) => {
       queryClient.invalidateQueries({ queryKey: ['master-restaurants'] });
       queryClient.invalidateQueries({ queryKey: ['master-tickets'] });
-      toast.success('Restaurante cadastrado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['implementation-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['master-stats'] });
+      
+      toast.success(`Restaurante "${restaurant.name}" cadastrado com sucesso!`);
       setOpen(false);
       setStep(1);
       setFormData({
@@ -146,9 +239,11 @@ Novo restaurante cadastrado:
         contact_name: '',
         notes: ''
       });
+      setErrors({});
     },
-    onError: (error) => {
-      toast.error('Erro ao cadastrar restaurante: ' + error.message);
+    onError: (error: any) => {
+      console.error('Erro na mutação:', error);
+      toast.error(error.message || 'Erro ao cadastrar restaurante');
     }
   });
 
@@ -157,6 +252,28 @@ Novo restaurante cadastrado:
       ...prev,
       [field]: value
     }));
+    
+    // Limpar erro do campo quando o usuário começar a digitar
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 14) {
+      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    return value;
+  };
+
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCNPJ(e.target.value);
+    handleInputChange('cnpj', formatted);
   };
 
   const canProceedToStep2 = formData.name && formData.email && formData.phone && formData.cnpj;
@@ -213,7 +330,14 @@ Novo restaurante cadastrado:
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Nome do restaurante"
+                  className={errors.name ? 'border-red-500' : ''}
                 />
+                {errors.name && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.name}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="email">Email *</Label>
@@ -223,7 +347,14 @@ Novo restaurante cadastrado:
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="email@exemplo.com"
+                  className={errors.email ? 'border-red-500' : ''}
                 />
+                {errors.email && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.email}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="phone">Telefone *</Label>
@@ -232,16 +363,30 @@ Novo restaurante cadastrado:
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="(11) 99999-9999"
+                  className={errors.phone ? 'border-red-500' : ''}
                 />
+                {errors.phone && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.phone}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="cnpj">CNPJ *</Label>
                 <Input
                   id="cnpj"
                   value={formData.cnpj}
-                  onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                  onChange={handleCNPJChange}
                   placeholder="00.000.000/0000-00"
+                  className={errors.cnpj ? 'border-red-500' : ''}
                 />
+                {errors.cnpj && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.cnpj}
+                  </div>
+                )}
               </div>
             </div>
             <div>
@@ -255,7 +400,11 @@ Novo restaurante cadastrado:
             </div>
             <div className="flex justify-end pt-4">
               <Button 
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  if (validateStep1()) {
+                    setStep(2);
+                  }
+                }}
                 disabled={!canProceedToStep2}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -330,7 +479,7 @@ Novo restaurante cadastrado:
             
             {/* Payment Method */}
             <div>
-              <Label className="text-base font-medium">Forma de Pagamento</Label>
+              <Label className="text-base font-medium">Forma de Pagamento *</Label>
               <div className="grid grid-cols-3 gap-4 mt-3">
                 {paymentMethods.map((method) => {
                   const Icon = method.icon;
@@ -341,7 +490,7 @@ Novo restaurante cadastrado:
                         formData.payment_method === method.id 
                           ? 'ring-2 ring-blue-500 border-blue-500' 
                           : 'hover:border-gray-300'
-                      }`}
+                      } ${errors.payment_method ? 'border-red-500' : ''}`}
                       onClick={() => handleInputChange('payment_method', method.id)}
                     >
                       <CardContent className="p-4 text-center">
@@ -352,6 +501,12 @@ Novo restaurante cadastrado:
                   );
                 })}
               </div>
+              {errors.payment_method && (
+                <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.payment_method}
+                </div>
+              )}
             </div>
 
             {/* Implementation Option */}
@@ -375,7 +530,14 @@ Novo restaurante cadastrado:
                   value={formData.contact_name}
                   onChange={(e) => handleInputChange('contact_name', e.target.value)}
                   placeholder="Nome do responsável"
+                  className={errors.contact_name ? 'border-red-500' : ''}
                 />
+                {errors.contact_name && (
+                  <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.contact_name}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="notes">Observações</Label>
@@ -437,7 +599,11 @@ Novo restaurante cadastrado:
                 Voltar
               </Button>
               <Button 
-                onClick={() => createRestaurantMutation.mutate(formData)}
+                onClick={() => {
+                  if (validateStep3()) {
+                    createRestaurantMutation.mutate(formData);
+                  }
+                }}
                 disabled={!canSubmit || createRestaurantMutation.isPending}
                 className="bg-green-600 hover:bg-green-700"
               >
