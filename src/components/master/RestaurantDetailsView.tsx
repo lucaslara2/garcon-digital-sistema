@@ -17,7 +17,8 @@ import {
   AlertCircle,
   CheckCircle,
   Package,
-  ShoppingCart
+  ShoppingCart,
+  ArrowLeft
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,9 +28,15 @@ import RestaurantLoginManager from './RestaurantLoginManager';
 
 interface RestaurantDetailsViewProps {
   restaurantId: string;
+  onBack?: () => void;
+  onNavigateToTab?: (tabId: string, restaurantId?: string) => void;
 }
 
-const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({ restaurantId }) => {
+const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({ 
+  restaurantId, 
+  onBack,
+  onNavigateToTab 
+}) => {
   const { data: restaurant, isLoading: loadingRestaurant } = useQuery({
     queryKey: ['restaurant-details', restaurantId],
     queryFn: async () => {
@@ -130,6 +137,20 @@ const RestaurantDetailsView: React.FC<RestaurantDetailsViewProps> = ({ restauran
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      {onBack && (
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={onBack}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
+      )}
+
       {/* Header do Restaurante */}
       <div className="bg-white p-6 rounded-lg border">
         <div className="flex items-start justify-between mb-6">
