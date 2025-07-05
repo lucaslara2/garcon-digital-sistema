@@ -15,7 +15,7 @@ interface ProductStatsProps {
   categories: any[];
 }
 
-const ProductStats = ({ products, categories }: ProductStatsProps) => {
+const ProductStats = ({ products = [], categories = [] }: ProductStatsProps) => {
   const totalProducts = products.length;
   const activeProducts = products.filter(p => p.is_active).length;
   const lowStockProducts = products.filter(p => 

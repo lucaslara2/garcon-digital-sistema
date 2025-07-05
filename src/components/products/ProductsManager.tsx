@@ -32,9 +32,9 @@ const ProductsManager = () => {
   const isAdmin = userProfile?.role === 'admin';
   const effectiveRestaurantId = isAdmin ? selectedRestaurantId : userProfile?.restaurant_id;
 
-  // Fetch categories and products only when restaurant is selected
-  const { data: categories = [] } = useCategories();
-  const { data: products = [] } = useProducts(selectedCategory);
+  // Fetch categories and products with the effective restaurant ID
+  const { data: categories = [] } = useCategories(effectiveRestaurantId);
+  const { data: products = [] } = useProducts(selectedCategory, effectiveRestaurantId);
 
   const handleEditProduct = (product: any) => {
     setEditingProduct(product);
@@ -71,7 +71,7 @@ const ProductsManager = () => {
 
       {(!isAdmin || effectiveRestaurantId) && (
         <>
-          <ProductStats selectedCategory={selectedCategory} />
+          <ProductStats products={products} categories={categories} />
 
           <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-5">

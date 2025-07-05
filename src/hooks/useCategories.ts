@@ -1,28 +1,34 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
-export const useCategories = () => {
+export const useCategories = (restaurantId?: string | null) => {
   const { userProfile } = useAuth();
+  
+  // Use the provided restaurantId or fall back to user's restaurant_id
+  const effectiveRestaurantId = restaurantId || userProfile?.restaurant_id;
 
   return useQuery({
-    queryKey: ['categories', userProfile?.restaurant_id],
+    queryKey: ['categories', effectiveRestaurantId],
     queryFn: async () => {
+      if (!effectiveRestaurantId) {
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('product_categories')
         .select(`
           *,
           products(count)
         `)
-        .eq('restaurant_id', userProfile?.restaurant_id)
+        .eq('restaurant_id', effectiveRestaurantId)
         .order('display_order');
       
       if (error) throw error;
       return data;
     },
-    enabled: !!userProfile?.restaurant_id
+    enabled: !!effectiveRestaurantId
   });
 };
 
