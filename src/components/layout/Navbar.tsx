@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
@@ -13,8 +14,11 @@ import {
   MessageSquare,
   QrCode,
   Shield,
-  Package
+  Package,
+  Menu,
+  X
 } from 'lucide-react';
+import { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +33,7 @@ export const Navbar = () => {
   const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -75,21 +80,30 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <nav 
+      className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50"
+      role="navigation"
+      aria-label="Navegação principal"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/dashboard" className="flex items-center">
+            <Link 
+              to="/dashboard" 
+              className="flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+              aria-label="RestaurantOS - Ir para dashboard"
+            >
               <div className="bg-blue-600 text-white p-2 rounded-lg mr-3">
                 <ShoppingCart className="h-5 w-5" />
               </div>
-              <span className="text-xl font-bold text-gray-900">RestaurantOS</span>
+              <span className="text-xl font-bold text-gray-900 hidden sm:block">RestaurantOS</span>
+              <span className="text-lg font-bold text-gray-900 sm:hidden">ROS</span>
             </Link>
           </div>
 
-          {/* Menu de Navegação */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Desktop Menu */}
+          <div className="hidden lg:flex items-center space-x-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -97,11 +111,12 @@ export const Navbar = () => {
                   <Button 
                     variant={isActive(item.path) ? "default" : "ghost"}
                     size="sm"
-                    className={`flex items-center space-x-2 ${
+                    className={`flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       item.path === '/master' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
                     }`}
+                    aria-current={isActive(item.path) ? 'page' : undefined}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" aria-hidden="true" />
                     <span>{item.label}</span>
                   </Button>
                 </Link>
@@ -109,14 +124,32 @@ export const Navbar = () => {
             })}
           </div>
 
-          {/* Menu do Usuário */}
-          <div className="flex items-center space-x-4">
-            {/* QR Code do Cardápio */}
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label="Abrir menu de navegação"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+
+          {/* QR Code do Cardápio - Desktop */}
+          <div className="hidden md:flex items-center space-x-4">
             {userProfile?.role !== 'admin' && userProfile?.role !== 'staff' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <QrCode className="h-4 w-4 mr-2" />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Menu QR Code"
+                  >
+                    <QrCode className="h-4 w-4 mr-2" aria-hidden="true" />
                     QR Menu
                   </Button>
                 </DropdownMenuTrigger>
@@ -152,11 +185,16 @@ export const Navbar = () => {
               </DropdownMenu>
             )}
 
+            {/* User Menu - Desktop */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label={`Menu do usuário ${userProfile?.name}`}
+                >
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-blue-600" />
+                    <User className="h-4 w-4 text-blue-600" aria-hidden="true" />
                   </div>
                   <div className="hidden md:block text-left">
                     <div className="text-sm font-medium text-gray-900">{userProfile?.name}</div>
@@ -170,36 +208,69 @@ export const Navbar = () => {
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-600" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
                   Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-      </div>
 
-      {/* Menu Mobile */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="flex overflow-x-auto px-4 py-2 space-x-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.path} to={item.path} className="flex-shrink-0">
-                <Button 
-                  variant={isActive(item.path) ? "default" : "ghost"}
-                  size="sm"
-                  className={`flex flex-col items-center h-auto py-2 px-3 text-xs ${
-                    item.path === '/master' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
-                  }`}
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div 
+            id="mobile-menu"
+            className="lg:hidden border-t border-gray-200 py-4 space-y-2"
+            role="menu"
+            aria-label="Menu mobile"
+          >
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link 
+                  key={item.path} 
+                  to={item.path} 
+                  onClick={() => setMobileMenuOpen(false)}
+                  role="menuitem"
                 >
-                  <Icon className="h-4 w-4 mb-1" />
-                  <span>{item.label}</span>
-                </Button>
-              </Link>
-            );
-          })}
-        </div>
+                  <Button 
+                    variant={isActive(item.path) ? "default" : "ghost"}
+                    className={`w-full justify-start ${
+                      item.path === '/master' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
+                    }`}
+                    aria-current={isActive(item.path) ? 'page' : undefined}
+                  >
+                    <Icon className="h-4 w-4 mr-2" aria-hidden="true" />
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
+            
+            {/* Mobile User Info */}
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center space-x-3 px-3 py-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-900">{userProfile?.name}</div>
+                  <Badge className={`text-xs ${getRoleColor(userProfile?.role || '')}`}>
+                    {getRoleText(userProfile?.role || '')}
+                  </Badge>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-600 mt-2"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

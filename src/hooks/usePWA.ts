@@ -10,6 +10,7 @@ export function usePWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     // Register service worker
@@ -17,6 +18,21 @@ export function usePWA() {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
+          
+          // Listen for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content is available
+                  if (confirm('Nova versão disponível! Deseja atualizar?')) {
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
         })
         .catch((registrationError) => {
           console.log('SW registration failed: ', registrationError);
@@ -35,10 +51,18 @@ export function usePWA() {
       setIsInstallable(true);
     };
 
+    // Listen for online/offline events
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -56,9 +80,20 @@ export function usePWA() {
     setIsInstallable(false);
   };
 
+  const checkForUpdates = async () => {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        registration.update();
+      }
+    }
+  };
+
   return {
     isInstallable,
     isInstalled,
-    installApp
+    isOnline,
+    installApp,
+    checkForUpdates
   };
 }
