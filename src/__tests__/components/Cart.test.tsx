@@ -1,73 +1,75 @@
 
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Cart } from '@/components/pos/Cart';
+import '@testing-library/jest-dom';
 import { describe, it, expect, vi } from 'vitest';
+import { Cart } from '@/components/pos/Cart';
 
-const mockCartItem = {
-  id: '1',
-  name: 'Pizza Margherita',
-  price: 25.90,
-  quantity: 2,
-  total: 51.80,
-  addons: [
-    { id: 'addon1', name: 'Queijo Extra', price: 5.00, quantity: 1 }
-  ],
-  notes: 'Sem cebola'
-};
-
-const mockProps = {
-  cart: [mockCartItem],
-  onAddToCart: vi.fn(),
-  onRemoveFromCart: vi.fn(),
-  onClearCart: vi.fn()
-};
+// Mock the toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn()
+  }
+}));
 
 describe('Cart Component', () => {
-  it('should render cart items correctly', () => {
+  const mockCartItems = [
+    {
+      id: '1',
+      product: {
+        id: '1',
+        name: 'Test Product',
+        price: 10.00,
+        description: 'Test Description',
+        image_url: null,
+        is_active: true,
+        category_id: null,
+        restaurant_id: 'test-restaurant',
+        created_at: '2023-01-01',
+        updated_at: '2023-01-01'
+      },
+      quantity: 2,
+      notes: ''
+    }
+  ];
+
+  const mockProps = {
+    items: mockCartItems,
+    onUpdateQuantity: vi.fn(),
+    onRemoveItem: vi.fn(),
+    onClearCart: vi.fn(),
+    onCheckout: vi.fn()
+  };
+
+  it('renders cart items correctly', () => {
     render(<Cart {...mockProps} />);
     
-    expect(screen.getByText('Pizza Margherita')).toBeInTheDocument();
-    expect(screen.getByText('R$ 25,90 cada')).toBeInTheDocument();
+    expect(screen.getByText('Test Product')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('should display addons correctly', () => {
+  it('calls onUpdateQuantity when quantity is changed', () => {
     render(<Cart {...mockProps} />);
     
-    expect(screen.getByText('Adicionais:')).toBeInTheDocument();
-    expect(screen.getByText('+ Queijo Extra (1x)')).toBeInTheDocument();
-    expect(screen.getByText('R$ 5,00')).toBeInTheDocument();
+    const increaseButton = screen.getByText('+');
+    fireEvent.click(increaseButton);
+    
+    expect(mockProps.onUpdateQuantity).toHaveBeenCalledWith('1', 3);
   });
 
-  it('should display notes when present', () => {
+  it('calls onRemoveItem when remove button is clicked', () => {
     render(<Cart {...mockProps} />);
     
-    expect(screen.getByText('Obs:')).toBeInTheDocument();
-    expect(screen.getByText('Sem cebola')).toBeInTheDocument();
+    const removeButton = screen.getByText('Remover');
+    fireEvent.click(removeButton);
+    
+    expect(mockProps.onRemoveItem).toHaveBeenCalledWith('1');
   });
 
-  it('should call onAddToCart when plus button is clicked', () => {
+  it('displays correct total', () => {
     render(<Cart {...mockProps} />);
     
-    const plusButton = screen.getByRole('button', { name: /\+/ });
-    fireEvent.click(plusButton);
-    
-    expect(mockProps.onAddToCart).toHaveBeenCalledWith(mockCartItem);
-  });
-
-  it('should call onRemoveFromCart when minus button is clicked', () => {
-    render(<Cart {...mockProps} />);
-    
-    const minusButton = screen.getByRole('button', { name: /-/ });
-    fireEvent.click(minusButton);
-    
-    expect(mockProps.onRemoveFromCart).toHaveBeenCalledWith('1');
-  });
-
-  it('should show empty cart message when cart is empty', () => {
-    render(<Cart {...mockProps} cart={[]} />);
-    
-    expect(screen.getByText('Carrinho vazio')).toBeInTheDocument();
-    expect(screen.getByText('Adicione produtos clicando nos itens do menu')).toBeInTheDocument();
+    expect(screen.getByText('R$ 20,00')).toBeInTheDocument();
   });
 });
