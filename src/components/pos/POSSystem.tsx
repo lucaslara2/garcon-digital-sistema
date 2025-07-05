@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/ui/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ProductGrid } from './ProductGrid';
 import { OrderDetails } from './OrderDetails';
@@ -12,7 +10,7 @@ import { Cart } from './Cart';
 import { PaymentSection } from './PaymentSection';
 import { ActiveOrders } from './ActiveOrders';
 import { OrderTicket } from './OrderTicket';
-import { Calculator, Store } from 'lucide-react';
+import { Store, ShoppingCart, Receipt } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
 type PaymentMethod = Database['public']['Enums']['payment_method'];
@@ -229,40 +227,70 @@ const POSSystem = () => {
     );
   }
 
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-      {/* Header mais limpo */}
-      <div className="bg-slate-900/50 backdrop-blur border-b border-slate-700/50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-2 rounded-lg">
-              <Store className="h-6 w-6 text-white" />
+      {/* Header Premium */}
+      <div className="bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-3 rounded-xl shadow-lg">
+                  <Store className="h-7 w-7 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-slate-900"></div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  Sistema PDV
+                </h1>
+                <p className="text-slate-400 text-sm font-medium">
+                  {userProfile.name} • {new Date().toLocaleDateString('pt-BR')}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Sistema PDV</h1>
-              <p className="text-slate-400 text-sm">Ponto de Venda - {userProfile.name}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Total do Carrinho</p>
-              <p className="text-xl font-bold text-amber-400">R$ {getTotal().toFixed(2)}</p>
+            
+            <div className="flex items-center space-x-6">
+              {/* Stats Cards */}
+              <div className="flex items-center space-x-4">
+                <div className="bg-slate-800/60 backdrop-blur px-4 py-2 rounded-xl border border-slate-700/50">
+                  <div className="flex items-center space-x-2">
+                    <ShoppingCart className="h-4 w-4 text-amber-400" />
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">Itens</p>
+                      <p className="text-sm font-bold text-white">{totalItems}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-amber-900/40 to-orange-900/40 backdrop-blur px-4 py-2 rounded-xl border border-amber-500/30">
+                  <div className="flex items-center space-x-2">
+                    <Receipt className="h-4 w-4 text-amber-400" />
+                    <div className="text-right">
+                      <p className="text-xs text-amber-200/70">Total</p>
+                      <p className="text-lg font-bold text-amber-400">R$ {getTotal().toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Layout Principal */}
+      {/* Layout Principal Refinado */}
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-12 gap-6 h-[calc(100vh-140px)]">
           
           {/* Coluna 1: Produtos (4 colunas) */}
-          <div className="col-span-4 space-y-4">
+          <div className="col-span-4">
             <ProductGrid products={products} onAddToCart={addToCart} />
           </div>
 
           {/* Coluna 2: Carrinho e Processamento (3 colunas) */}
-          <div className="col-span-3 space-y-4 flex flex-col">
+          <div className="col-span-3 space-y-6 flex flex-col">
             <OrderDetails
               selectedTable={selectedTable}
               setSelectedTable={setSelectedTable}
@@ -281,17 +309,19 @@ const POSSystem = () => {
             </div>
 
             {cart.length > 0 && (
-              <PaymentSection
-                subtotal={getSubtotal()}
-                total={getTotal()}
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
-                amountPaid={amountPaid}
-                setAmountPaid={setAmountPaid}
-                change={getChange()}
-                onProcessOrder={handleProcessOrder}
-                isProcessing={processOrderMutation.isPending}
-              />
+              <div className="animate-fade-in">
+                <PaymentSection
+                  subtotal={getSubtotal()}
+                  total={getTotal()}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  amountPaid={amountPaid}
+                  setAmountPaid={setAmountPaid}
+                  change={getChange()}
+                  onProcessOrder={handleProcessOrder}
+                  isProcessing={processOrderMutation.isPending}
+                />
+              </div>
             )}
           </div>
 
