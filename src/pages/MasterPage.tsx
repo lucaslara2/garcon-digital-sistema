@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Navigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import EnhancedMasterDashboard from '@/components/master/EnhancedMasterDashboard';
+import MinimalMasterDashboard from '@/components/master/MinimalMasterDashboard';
 
 const MasterPage = () => {
   const { userProfile, loading } = useAuth();
@@ -12,7 +12,7 @@ const MasterPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" text="Carregando painel master..." />
       </div>
     );
@@ -29,8 +29,8 @@ const MasterPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log('Access granted to enhanced master dashboard');
-  return <EnhancedMasterDashboard />;
+  console.log('Access granted to minimal master dashboard');
+  return <MinimalMasterDashboard />;
 };
 
 export default MasterPage;
